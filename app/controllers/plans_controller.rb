@@ -1,4 +1,5 @@
 include Response
+include SlackToken
 
 class PlansController < ApplicationController
 
@@ -12,6 +13,8 @@ class PlansController < ApplicationController
 
   # POST /plans
   def create
+    puts request
+    return json_response({}, status: 403) unless valid_slack_token?
     @plan = Plan.create!(plan_params)
     json_response(@plan, :created)
   end
