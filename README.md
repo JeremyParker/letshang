@@ -12,6 +12,7 @@ Things you may want to cover:
 * Configuration
 
 * Database creation
+`rails db:migrate` after every change.
 
 * Database initialization
 
