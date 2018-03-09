@@ -3,6 +3,6 @@ Rails.application.routes.draw do
   resources :plans
 
   # endpoints for Slack to call
-  post 'slack_sumbmission', to: 'slack_submissions#create'
+  post 'slack_submission', to: 'slack_submissions#create'
   post 'slack_slash_command', to: 'slack_slash_commands#create'
 end

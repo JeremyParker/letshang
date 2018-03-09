@@ -5,12 +5,12 @@ require 'slack-ruby-client'
 # Handles all requests from Slack that come in the form of a slash command
 class SlackSlashCommandsController < ApplicationController
 
-  INTRO_MESSAGE = 'Hi there, I’m here to help you effortlessly plan a shindig! \
+  INTRO_MESSAGE = "Hi there, I’m here to help you effortlessly plan a shindig! \
 You pick the time, attendees, minimum number of people and 2-8 options of what \
 you’d like to do. I’ll send the request and collect the votes. I can get the \
 minimum number of people agree to on an option within 2 hours, I’ll create a \
 group chat and announce the winning option. If a minimum number of attendees is \
-not reached, I’ll cancel the request.'
+not reached, I’ll cancel the request."
 
   # POST /slack_slash_command
   def create
