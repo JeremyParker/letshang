@@ -9,7 +9,7 @@ class SlackSlashCommandsController < ApplicationController
   def create
     puts request
     return json_response({}, status: 403) unless valid_slack_token?
-    json_response({cool: 'cool'}, :created)
+    json_response({message: 'cool'}, :created)
 
     Slack.configure do |config|
       config.token = ENV['SLACK_BOT_USER_TOKEN']
@@ -21,6 +21,6 @@ class SlackSlashCommandsController < ApplicationController
 
     client = Slack::Web::Client.new
     Rails.logger.debug client.auth_test
-    client.chat_postMessage(channel: '#random', text: 'Hello World', as_user: false)
+    client.chat_postMessage(channel: params[:channel_id], text: 'Hello World', as_user: false)
   end
 end
