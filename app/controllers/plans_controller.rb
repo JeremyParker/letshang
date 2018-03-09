@@ -21,17 +21,20 @@ class PlansController < ApplicationController
 
   # GET /plans/:id
   def show
+    puts request
     json_response(@plan)
   end
 
   # PUT /plans/:id
   def update
+    puts request
     @plan.update(plan_params)
     head :no_content
   end
 
   # DELETE /plans/:id
   def destroy
+    puts request
     @plan.destroy
     head :no_content
   end
@@ -46,4 +49,5 @@ class PlansController < ApplicationController
   def set_plan
     @plan = Plan.find(params[:id])
   end
+
 end
