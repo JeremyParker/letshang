@@ -1,3 +1,4 @@
+# Checks the incoming token passed wiht a request from Slack
 
 module SlackToken
   def valid_slack_token?
