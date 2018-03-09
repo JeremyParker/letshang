@@ -10,6 +10,8 @@ Things you may want to cover:
 * System dependencies
 
 * Configuration
+Copy .env_example to a file called .env. Change the values of the variables to match the values relevant
+to your installation. Each var should document where to get it from.
 
 * Database creation
 `rails db:migrate` after every change.
