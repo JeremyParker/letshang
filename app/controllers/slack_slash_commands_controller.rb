@@ -12,10 +12,10 @@ class SlackSlashCommandsController < ApplicationController
     json_response({cool: 'cool'}, :created)
 
     Slack.configure do |config|
-      config.token = ENV['SLACK_BOT_USER_TOKEN']
+      config.token = ENV['SLACK_OAUTH_ACCESS_TOKEN']
       unless config.token
-        Rails.logger.debug 'Missing ENV[SLACK_BOT_USER_TOKEN]!'
-        raise 'Missing ENV[SLACK_BOT_USER_TOKEN]!'
+        Rails.logger.debug 'Missing ENV[SLACK_OAUTH_ACCESS_TOKEN]!'
+        raise 'Missing ENV[SLACK_OAUTH_ACCESS_TOKEN]!'
       end
     end
 
