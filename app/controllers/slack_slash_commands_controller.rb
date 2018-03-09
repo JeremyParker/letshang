@@ -21,6 +21,6 @@ class SlackSlashCommandsController < ApplicationController
 
     client = Slack::Web::Client.new
     Rails.logger.debug client.auth_test
-    client.chat_postMessage(channel: params[:channel_id], text: 'Hello World', as_user: true)
+    client.chat_postMessage(channel: '#random', text: 'Hello World', as_user: true)
   end
 end
