@@ -32,28 +32,11 @@ class AuthRedirectsController < ApplicationController
         new_team_data[:bot_access_token] = response[:bot][:bot_access_token]
         new_team_data.delete(:bot)
 
-        Team.create(new_team_data)
+        Team.create_or_update(new_team_data)
 
         render body: "Hi #{new_team_data[:team_name]}! Thanks for installing \"Let's Hang\"!", status: status
-
-        # # testing
-        # Slack.configure do |config|
-        #   config.token = bot_access_token
-        #   config.logger = Rails::logger
-        # end
-        # client = Slack::Web::Client.new
-
-        # # testing what we can do with the different tokens
-        # require 'pry'; binding.pry
-        # response = client.conversations_open({return_im: true, users: user_id})
-        # require 'pry'; binding.pry
-        # client.chat_postMessage(
-        #   channel: response[:channel][:id],
-        #   text: "Thanks for installing Let's Hang!",
-        #   as_user: false
-        # )
       else
-        # redirect to some error page?
+        # TODO: redirect to some error page?
       end
    end
   end
