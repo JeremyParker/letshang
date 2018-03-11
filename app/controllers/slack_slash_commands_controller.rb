@@ -42,17 +42,5 @@ not reached, I’ll cancel the request."
         }
       ]
     }, :created)
-
-    # Slack.configure do |config|
-    #   config.token = ENV['SLACK_BOT_USER_TOKEN']
-    #   unless config.token
-    #     Rails.logger.debug 'Missing ENV[SLACK_BOT_USER_TOKEN]!'
-    #     raise 'Missing ENV[SLACK_BOT_USER_TOKEN]!'
-    #   end
-    # end
-
-    # client = Slack::Web::Client.new
-    # Rails.logger.debug client.auth_test
-    # client.chat_postMessage(channel: params[:channel_id], text: 'Hello World', as_user: false)
   end
 end
