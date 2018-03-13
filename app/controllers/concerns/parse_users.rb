@@ -15,6 +15,9 @@ module ParseUsers
     str.scan(/<@U\w{8}\|(\w+)>/).flatten.compact
   end
 
+  # Class to use in a case statement
+  # Evaluates to true if there are any user strings like "<@U02CWFEEJ|flavri>"
+  # in the `case` operand.
   class ContainsUsers
     def self.===(str)
       parse_user_ids(str).any?
