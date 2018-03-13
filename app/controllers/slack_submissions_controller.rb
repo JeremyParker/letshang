@@ -28,12 +28,11 @@ class SlackSubmissionsController < ApplicationController
 
     if payload['type'] == 'interactive_message'
       case payload['callback_id']
-        when 'create_plan'
+        when 'start_plan_response'
           team = Team.where(team_id: payload['team']['id']).order(:updated_at).last
-          channel = payload['channel']['id']
           trigger_id = payload['trigger_id']
 
-          # TODO: create a Plan object belonging to the initiating user
+          # TODO: how do we match this with the plan we created in the previous step?
 
           Slack.configure do |config|
             config.token = team.bot_access_token
@@ -46,13 +45,14 @@ class SlackSubmissionsController < ApplicationController
 
           # response = client.conversations_open({return_im: true, users: user_id})
           # require 'pry'; binding.pry
+          # channel = payload['channel']['id']
           # client.chat_postMessage(
           #   channel: response[:channel][:id],
           #   text: "Thanks for installing Let's Hang!",
           #   as_user: false
           # )
 
-          # # A response an include an interactive message with buttons
+          # # A response an include can interactive message with buttons
           # json_response({
           #   "text": 'Testing buttons in a response',
           #   "attachments": [
