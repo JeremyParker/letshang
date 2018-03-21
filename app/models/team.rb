@@ -1,6 +1,7 @@
 # A Model representing a Slack Team.
 
 class Team < ApplicationRecord
+  has_many :users
 
   def self.create_or_update(attributes)
     raise 'Missing team_id' unless attributes[:team_id]
@@ -12,6 +13,10 @@ class Team < ApplicationRecord
       self.create(attributes)
     end
     team
+  end
+
+  def to_s
+    team_name
   end
 
 end

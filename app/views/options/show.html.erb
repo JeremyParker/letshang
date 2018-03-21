@@ -1,0 +1,19 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Title:</strong>
+  <%= @option.title %>
+</p>
+
+<p>
+  <strong>Meeting time:</strong>
+  <%= @option.meeting_time %>
+</p>
+
+<p>
+  <strong>Reusable:</strong>
+  <%= @option.reusable %>
+</p>
+
+<%= link_to 'Edit', edit_option_path(@option) %> |
+<%= link_to 'Back', options_path %>

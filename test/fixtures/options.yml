@@ -1,13 +1,11 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  rough_time: 2018-03-18 20:14:39
-  owner: 
   title: MyString
-  user_intro: MyString
+  meeting_time: 2018-03-18 22:06:57
+  reusable: false
 
 two:
-  rough_time: 2018-03-18 20:14:39
-  owner: 
   title: MyString
-  user_intro: MyString
+  meeting_time: 2018-03-18 22:06:57
+  reusable: false

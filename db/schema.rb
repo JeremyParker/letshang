@@ -10,14 +10,47 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180311141543) do
+ActiveRecord::Schema.define(version: 20180319031107) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "plans", force: :cascade do |t|
+  create_table "attendances", force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "plan_id"
+  end
+
+  create_table "invitations", force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "plan_id"
+  end
+
+  create_table "option_plans", force: :cascade do |t|
+    t.integer "option_id"
+    t.integer "plan_id"
+  end
+
+  create_table "options", force: :cascade do |t|
     t.string "title"
-    t.string "created_by_slack_user"
+    t.datetime "meeting_time"
+    t.boolean "reusable"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "plans", force: :cascade do |t|
+    t.datetime "rough_time"
+    t.integer "owner_id"
+    t.string "title"
+    t.string "user_intro"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "responses", force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "offer_plan_id"
+    t.boolean "value"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -32,6 +65,13 @@ ActiveRecord::Schema.define(version: 20180311141543) do
     t.string "bot_access_token"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "slack_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "team_id"
   end
 
 end

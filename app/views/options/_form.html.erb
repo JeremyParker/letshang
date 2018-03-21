@@ -1,0 +1,32 @@
+<%= form_with(model: option, local: true) do |form| %>
+  <% if option.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(option.errors.count, "error") %> prohibited this option from being saved:</h2>
+
+      <ul>
+      <% option.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_field :title, id: :option_title %>
+  </div>
+
+  <div class="field">
+    <%= form.label :meeting_time %>
+    <%= form.datetime_select :meeting_time, id: :option_meeting_time %>
+  </div>
+
+  <div class="field">
+    <%= form.label :reusable %>
+    <%= form.check_box :reusable, id: :option_reusable %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>
