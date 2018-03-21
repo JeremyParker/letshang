@@ -2,6 +2,7 @@
 
 class Team < ApplicationRecord
   has_many :users
+  # belongs_to :installing_user, :class_name => :User, :foreign_key => "user_id" TODO
 
   def self.create_or_update(attributes)
     raise 'Missing team_id' unless attributes[:team_id]

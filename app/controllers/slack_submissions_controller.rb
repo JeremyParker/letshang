@@ -2,6 +2,7 @@ include Response
 include SlackToken
 
 class SlackSubmissionsController < ApplicationController
+  protect_from_forgery :except => [:create] # we check the token 'manually' with `valid_slack_token`
 
   TEST_DIALOG = {
     "callback_id": "ryde-46e2b0",
@@ -24,7 +25,7 @@ class SlackSubmissionsController < ApplicationController
   # POST /slack_submission
   def create
     payload = JSON.parse params[:payload]
-    return json_response({}, status: 403) unless valid_slack_token? payload['token']
+    return json_response({}, :forbidden) unless valid_slack_token? payload['token']
 
     if payload['type'] == 'interactive_message'
       case payload['callback_id']
@@ -44,7 +45,6 @@ class SlackSubmissionsController < ApplicationController
           json_response({}, :created)
 
           # response = client.conversations_open({return_im: true, users: user_id})
-          # require 'pry'; binding.pry
           # channel = payload['channel']['id']
           # client.chat_postMessage(
           #   channel: response[:channel][:id],

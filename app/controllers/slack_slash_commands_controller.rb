@@ -6,6 +6,7 @@ include StartPlanMessage
 
 # Handles all requests from Slack that come in the form of a slash command
 class SlackSlashCommandsController < ApplicationController
+  protect_from_forgery :except => [:create] # we check the token 'manually' with `valid_slack_token`
 
   # POST /slack_slash_command
   # We expect params to look like this:
@@ -26,7 +27,7 @@ class SlackSlashCommandsController < ApplicationController
   # }
   def create
     puts request
-    return json_response({}, status: 403) unless valid_slack_token?
+    return json_response({}, :forbidden) unless valid_slack_token?
 
     case params[:text]
     when ContainsUsers
@@ -34,19 +35,20 @@ class SlackSlashCommandsController < ApplicationController
       user_names = parse_user_names(params[:text])
       user_ids = parse_user_ids(params[:text])
 
-
-      json_response(start_plan_message(user_names), :created)
+      message = start_plan_message(user_names)
+      json_response(message, :created)
 
       # TESTING ##################################################
-      team = Team.where(team_id: params['team_id']).order(:updated_at).last
+      # team = Team.where(team_id: params['team_id']).order(:updated_at).last
 
-      Slack.configure do |config|
-        config.token = team.bot_access_token
-        config.logger = Rails::logger
-      end
-      client = Slack::Web::Client.new
-      response = client.conversations_open(token: team.bot_access_token, return_im: true, users: user_ids)
-      client.chat_postMessage(text: 'whassup!', channel: response[:channel][:id])
+      # Slack.configure do |config|
+      #   config.token = team.bot_access_token
+      #   config.logger = Rails::logger
+      # end
+      # client = Slack::Web::Client.new
+      # comma_separated_users = user_ids.join(',')
+      # response = client.conversations_open(token: team.bot_access_token, return_im: true, users: comma_separated_users)
+      # client.chat_postMessage(text: 'whassup!', channel: response[:channel][:id])
       ############################################################
 
 

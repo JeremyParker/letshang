@@ -2,6 +2,7 @@
 # gets redirected here with a code.
 
 class AuthRedirectsController < ApplicationController
+  protect_from_forgery :except => [:index] # they don't send us any token :(
 
   # GET /auth_redirects
   def index
