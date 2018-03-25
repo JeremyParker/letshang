@@ -1,8 +1,6 @@
 include Response
 include SlackToken
 include ParseUsers
-include HelpMessage
-include StartPlanMessage
 
 # Handles all requests from Slack that come in the form of a slash command
 class SlackSlashCommandsController < ApplicationController
@@ -30,13 +28,14 @@ class SlackSlashCommandsController < ApplicationController
     return json_response({}, :forbidden) unless valid_slack_token?
 
     case params[:text]
-    when ContainsUsers
-      # TODO: create new user records for these users and a new plan.
+    when ContainsUsers #when the slash command has users tagged in it
       user_names = parse_user_names(params[:text])
-      user_ids = parse_user_ids(params[:text])
+      return json_response(SlackSlashCommandsHelper.start_plan_more_people, :created) if user_names.length < 2
 
-      message = start_plan_message(user_names)
-      json_response(message, :created)
+      json_response(SlackSlashCommandsHelper.start_plan(user_names), :created)
+
+      # TODO: create new user records for these users and a new plan.
+      user_ids = parse_user_ids(params[:text])
 
       # TESTING ##################################################
       # team = Team.where(team_id: params['team_id']).order(:updated_at).last
@@ -51,9 +50,10 @@ class SlackSlashCommandsController < ApplicationController
       # client.chat_postMessage(text: 'whassup!', channel: response[:channel][:id])
       ############################################################
 
-
-    when /\A\s*\z|(help)/i # empty or the string 'help' (case insensitive)
-      json_response(help_message, :created)
+    when /help$/i # the string 'help' (case insensitive)
+      json_response(SlackSlashCommandsHelper.help(), :created)
+    when /\A\s*\z/ # empty
+      json_response(SlackSlashCommandsHelper.intro(), :created)
     else
       json_response({text: "Sorry, I didn't understand that"}, :created)
     end
