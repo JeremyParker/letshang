@@ -39,33 +39,31 @@ The more people you invite, the more likely you'll have a plan!"
     { text: "If you only want to invite one other person, you don't need my help. Just DM them!"}
   end
 
-  def self.start_plan(user_names)
-    formatted_user_names = user_names[0..user_names.length - 2].map {|n| "@#{n}"}.join(', ') + ' and @' + user_names[user_names.length - 1]
-    {
-      text: "OK! We'll see if we can plan something with #{formatted_user_names}.",
-      attachments: [
+  def self.plan_size_dialog(plan, trigger_id)
+    dialog = {
+      "callback_id": "set_plan_size:#{plan.id}",
+      "title": "Smallest Group That's OK",
+      "submit_label": "OK",
+      "elements": [
         {
-          "text": "Sound good?",
-          "fallback": "You are unable to create a plan",
-          "callback_id": "start_plan_response",
-          "color": "#3AA3E3",
-          "attachment_type": "default",
-          "actions": [
-            {
-              "name": "response",
-              "text": "Yeah, let's go",
-              "type": "button",
-              "value": "yes"
-            },
-            {
-              "name": "response",
-              "text": "No. Let me try again.",
-              "type": "button",
-              "value": "no"
-            }
-          ]
+          "type": "text",
+          "subtype": "number",
+          "label": "Minimum Group Size",
+          "hint": "What's the smallest number of people you'd want to get together with? Enter a number between 2 and #{plan.invitations.count + 1}. The more the merrier!",
+          "placeholder": "Enter a number",
+          "name": "plan_size",
+          "min_length": 1,
+          "max_length": 3
         }
       ]
     }
+    bot_access_token = plan.owner.team.bot_access_token
+    Slack.configure do |config|
+      config.token = bot_access_token
+      config.logger = Rails::logger
+    end
+    client = Slack::Web::Client.new
+    client.dialog_open(token: bot_access_token, dialog: dialog, trigger_id: trigger_id)
   end
+
 end

@@ -32,19 +32,18 @@ class SlackSlashCommandsController < ApplicationController
     when ContainsUsers # when the slash command has users tagged in it
       user_names = parse_user_names(params[:text])
       return json_response(SlackSlashCommandsHelper.start_plan_more_people, :created) if user_names.length < 2
-
       team = Team.where(team_id: params[:team_id]).order(:updated_at).last
-
-      # make sure we have user records for all users
       initiating_user = User.maybe_create(params[:user_id], team)
       invited_users = parse_user_ids(params[:text]).map { |u| User.maybe_create(u, team) }
-      Plan.start_plan(initiating_user, invited_users)
-      json_response(SlackSlashCommandsHelper.start_plan(user_names), :created)
+      plan = Plan.start_plan(initiating_user, invited_users)
+      SlackSlashCommandsHelper.plan_size_dialog(plan, params[:trigger_id])
 
     when /help$/i # the string 'help' (case insensitive)
       json_response(SlackSlashCommandsHelper.help(), :created)
+
     when /\A\s*\z/ # empty
       json_response(SlackSlashCommandsHelper.intro(), :created)
+
     else
       json_response({text: "Sorry, I didn't understand that"}, :created)
     end
