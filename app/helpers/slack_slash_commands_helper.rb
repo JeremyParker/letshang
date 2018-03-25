@@ -1,5 +1,19 @@
 module SlackSlashCommandsHelper
 
+      # TESTING ##################################################
+      # team = Team.where(team_id: params['team_id']).order(:updated_at).last
+
+      # Slack.configure do |config|
+      #   config.token = team.bot_access_token
+      #   config.logger = Rails::logger
+      # end
+      # client = Slack::Web::Client.new
+      # comma_separated_users = user_ids.join(',')
+      # response = client.conversations_open(token: team.bot_access_token, return_im: true, users: comma_separated_users)
+      # client.chat_postMessage(text: 'whassup!', channel: response[:channel][:id])
+      ############################################################
+
+
 INTRO = "Hi, I'm *Let's Hang*.
 For info on how all this works, type `/letshang help`
 To start planning an outing, tag your friends in a command like `/letshang @mike @taylor @susan`"

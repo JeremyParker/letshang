@@ -28,27 +28,18 @@ class SlackSlashCommandsController < ApplicationController
     return json_response({}, :forbidden) unless valid_slack_token?
 
     case params[:text]
-    when ContainsUsers #when the slash command has users tagged in it
+
+    when ContainsUsers # when the slash command has users tagged in it
       user_names = parse_user_names(params[:text])
       return json_response(SlackSlashCommandsHelper.start_plan_more_people, :created) if user_names.length < 2
 
+      team = Team.where(team_id: params[:team_id]).order(:updated_at).last
+
+      # make sure we have user records for all users
+      initiating_user = User.maybe_create(params[:user_id], team)
+      invited_users = parse_user_ids(params[:text]).map { |u| User.maybe_create(u, team) }
+      Plan.start_plan(initiating_user, invited_users)
       json_response(SlackSlashCommandsHelper.start_plan(user_names), :created)
-
-      # TODO: create new user records for these users and a new plan.
-      user_ids = parse_user_ids(params[:text])
-
-      # TESTING ##################################################
-      # team = Team.where(team_id: params['team_id']).order(:updated_at).last
-
-      # Slack.configure do |config|
-      #   config.token = team.bot_access_token
-      #   config.logger = Rails::logger
-      # end
-      # client = Slack::Web::Client.new
-      # comma_separated_users = user_ids.join(',')
-      # response = client.conversations_open(token: team.bot_access_token, return_im: true, users: comma_separated_users)
-      # client.chat_postMessage(text: 'whassup!', channel: response[:channel][:id])
-      ############################################################
 
     when /help$/i # the string 'help' (case insensitive)
       json_response(SlackSlashCommandsHelper.help(), :created)
