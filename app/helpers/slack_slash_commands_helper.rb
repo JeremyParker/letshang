@@ -40,6 +40,7 @@ The more people you invite, the more likely you'll have a plan!"
     { text: "If you only want to invite one other person, you don't need my help. Just DM them!"}
   end
 
+  # Ask the plan owner for the minimum attendee count
   def self.plan_size_dialog(plan, trigger_id)
     dialog = {
       "callback_id": "set_plan_size:#{plan.id}",
@@ -59,11 +60,7 @@ The more people you invite, the more likely you'll have a plan!"
       ]
     }
     bot_access_token = plan.owner.team.bot_access_token
-    Slack.configure do |config|
-      config.token = bot_access_token
-      config.logger = Rails::logger
-    end
-    client = Slack::Web::Client.new
+    client = SlackHelper.set_up_client(plan.owner)
     client.dialog_open(token: bot_access_token, dialog: dialog, trigger_id: trigger_id)
   end
 

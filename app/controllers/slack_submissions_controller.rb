@@ -27,14 +27,10 @@ class SlackSubmissionsController < ApplicationController
       case payload['callback_id']
       when /^set_plan_size/
         minimum_attendee_count = payload['submission']['plan_size'].to_i # TODO - error handling, bounds checking
-        plan = Plan.find(payload['callback_id'].split(':').last)
+        plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
         plan.update(minimum_attendee_count: minimum_attendee_count)
 
-        Slack.configure do |config|
-          config.token = plan.owner.team.bot_access_token
-          config.logger = Rails::logger
-        end
-        client = Slack::Web::Client.new
+        client = SlackHelper.set_up_client(plan.owner)
         client.chat_postEphemeral(
           channel: payload['channel']['id'],
           user: payload['user']['id'],
