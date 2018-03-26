@@ -30,41 +30,7 @@ class SlackSubmissionsController < ApplicationController
         plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
         plan.update(minimum_attendee_count: minimum_attendee_count)
 
-        client = SlackHelper.set_up_client(plan.owner)
-        client.chat_postEphemeral(
-          channel: payload['channel']['id'],
-          user: payload['user']['id'],
-          text: "",
-          attachments: [
-            {
-              "callback_id": "plan_time:#{plan.id}",
-              "attachment_type": "default",
-              "color": "#3AA3E3",
-              "text": "OK, we're planning an outing of at least #{minimum_attendee_count} people. When do you want this to happen?",
-              "actions": [
-                {
-                  "name": "plan_time",
-                  "text": "Pick one",
-                  "type": "select",
-                  "options": [
-                    {
-                        "text": "Tonight",
-                        "value": "today"
-                    },
-                    {
-                        "text": "Tomorrow",
-                        "value": "tomorrow"
-                    },
-                    {
-                        "text": "After tomorrow",
-                        "value": "later"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        )
+        SlackSubmissionsHelper.rough_time_message(plan, payload['channel']['id'])
         json_response({}, :ok)
     end
 
