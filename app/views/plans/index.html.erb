@@ -5,10 +5,10 @@
 <table>
   <thead>
     <tr>
-      <th>Rough time</th>
       <th>Owner</th>
+      <th>Rough time</th>
       <th>Title</th>
-      <th>User intro</th>
+      <th>Guest Count</th>
       <th colspan="3"></th>
     </tr>
   </thead>
@@ -16,10 +16,10 @@
   <tbody>
     <% @plans.each do |plan| %>
       <tr>
+        <td><%= plan.owner.slack_id %></td>
         <td><%= plan.rough_time %></td>
-        <td><%= plan.owner %></td>
-        <td><%= plan.title %></td>
-        <td><%= plan.user_intro %></td>
+        <td><%= plan.title || 'no title' %></td>
+        <td><%= plan.invitations.count %></td>
         <td><%= link_to 'Show', plan %></td>
         <td><%= link_to 'Edit', edit_plan_path(plan) %></td>
         <td><%= link_to 'Destroy', plan, method: :delete, data: { confirm: 'Are you sure?' } %></td>

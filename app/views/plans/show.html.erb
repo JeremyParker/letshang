@@ -1,13 +1,28 @@
 <p id="notice"><%= notice %></p>
 
 <p>
-  <strong>Rough time:</strong>
-  <%= @plan.rough_time %>
+  <strong>Team:</strong>
+  <%= @plan.owner.team.team_name %>
 </p>
 
 <p>
   <strong>Owner:</strong>
-  <%= @plan.owner %>
+  <%= @plan.owner.slack_id %>
+</p>
+
+<p>
+  <strong>Guests:</strong>
+  <ul>
+  <% @plan.invitations.each do |invitation| %>
+    <li><%= invitation.user.slack_id %>
+  <% end %>
+  </ul>
+
+</p>
+
+<p>
+  <strong>Rough time:</strong>
+  <%= @plan.rough_time %>
 </p>
 
 <p>
