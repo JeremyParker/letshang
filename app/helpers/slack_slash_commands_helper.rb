@@ -59,9 +59,8 @@ The more people you invite, the more likely you'll have a plan!"
         }
       ]
     }
-    bot_access_token = plan.owner.team.bot_access_token
     client = SlackHelper.set_up_client(plan.owner)
-    client.dialog_open(token: bot_access_token, dialog: dialog, trigger_id: trigger_id)
+    client.dialog_open(dialog: dialog, trigger_id: trigger_id)
   end
 
 end
