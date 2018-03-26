@@ -19,10 +19,11 @@ For info on how all this works, type `/letshang help`
 To start planning an outing, tag your friends in a command like `/letshang @mike @taylor @susan`"
 
 HELP_MESSAGE = "I’m here to help you get together with a group of friends on short notice. Here's how it works:
-Tell me who to invite, when you want to get together, and the smallest group size you'd want to get together with. Then \
-we'll put together a list of fun options you and your friends might want to do. I’ll find out who's free and what they're \
-up for doing. If I can get enough people to agree on something to do within 2 hours, then *BOOM* your plans are made! I'll let \
-everyone know what you're doing. If not, I'll let you know you still don't have plans.
+Tell me who to invite. Tell me how many of them you want to gather in order for it to be a fun outing. And tell \
+me when you want to get together. Then I'll help you put together a list of fun options you and your friends might \
+want to do. I’ll find out who's free and what they're up for doing. If I can get enough people to agree on something \
+to do within 2 hours, then *BOOM* your plans are made! I'll let everyone know what you're doing. If not, I'll let you \
+know you still don't have plans.
 To get started type `/letshang` followed by a list of your friends. For example ```/letshang @flavri @keely @marc @johannes \
 @akbar @cl47 @dorothea @sonia @whoever @rbm```
 The more people you invite, the more likely you'll have a plan!"
