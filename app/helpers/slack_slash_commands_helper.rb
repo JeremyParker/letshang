@@ -42,25 +42,27 @@ The more people you invite, the more likely you'll have a plan!"
 
   # Ask the plan owner for the minimum attendee count
   def self.plan_size_dialog(plan, trigger_id)
-    dialog = {
-      "callback_id": "set_plan_size:#{plan.id}",
-      "title": "Smallest Group That's OK",
-      "submit_label": "OK",
-      "elements": [
-        {
-          "type": "text",
-          "subtype": "number",
-          "label": "Minimum Group Size",
-          "hint": "What's the smallest number of people you'd want to get together with? Enter a number between 2 and #{plan.invitations.count + 1}. The more the merrier!",
-          "placeholder": "Enter a number",
-          "name": "plan_size",
-          "min_length": 1,
-          "max_length": 3
-        }
-      ]
-    }
     client = SlackHelper.set_up_client(plan.owner)
-    client.dialog_open(dialog: dialog, trigger_id: trigger_id)
+    client.dialog_open(
+      trigger_id: trigger_id,
+      dialog: {
+        "callback_id": "set_plan_size:#{plan.id}",
+        "title": "How many of these people",
+        "submit_label": "OK",
+        "elements": [
+          {
+            "type": "text",
+            "subtype": "number",
+            "label": "Minimum Group Size",
+            "hint": "What's the smallest number of these people you'd want to get together with? (Enter a number between 1 and #{plan.invitations.count})",
+            "placeholder": "Enter a number",
+            "name": "plan_size",
+            "min_length": 1,
+            "max_length": 3
+          }
+        ]
+      }
+    )
   end
 
 end
