@@ -14,7 +14,7 @@ class SlackSubmissionsController < ApplicationController
   #   "user"=>{"id"=>"U02CVNHRR", "name"=>"jeremy"},
   #   "channel"=>{"id"=>"C9LPTG4E4", "name"=>"testing"},
   #   "action_ts"=>"1522019535.632639",
-  #   "token"=>"<redacted>",
+  #   "token"=>"xxxxxx_our_secret_token_xxxx",
   #   "response_url"=>"https://hooks.slack.com/app/T02CVNHRP/335745644371/ybOjTi2mV43CgnH4GVp1u9ox"
   # }
   def create
@@ -25,14 +25,22 @@ class SlackSubmissionsController < ApplicationController
 
     when 'dialog_submission'
       case payload['callback_id']
+
       when /^set_plan_size/
         minimum_attendee_count = payload['submission']['plan_size'].to_i # TODO - error handling, bounds checking
         plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
         plan.update(minimum_attendee_count: minimum_attendee_count)
-
         SlackSubmissionsHelper.rough_time_message(plan, payload['channel']['id'])
         json_response({}, :ok)
+
+      when /^save_plan_option/
+        plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
+        title = payload['submission']['option_title']
+        plan.options << Option.create(title: title)
+        SlackSubmissionsHelper.option_saved_message(plan, payload['channel']['id'])
+        json_response({}, :ok)
     end
+
 
     # An interactive message expects the payload to look like
     # {
@@ -45,7 +53,7 @@ class SlackSubmissionsController < ApplicationController
     #   "action_ts"=>"1522035190.124049",
     #   "message_ts"=>"1522035178.000066",
     #   "attachment_id"=>"1",
-    #   "token"=>"<redacted>",
+    #   "token"=>"xxxxxx_our_secret_token_xxxx",
     #   "is_app_unfurl"=>false,
     #   "response_url"=>"https://hooks.slack.com/actions/T02CVNHRP/335796550691/WQOZmoeCQKZqxatQmSodkqcN",
     #   "trigger_id"=>"336718987558.2437765873.d037056e1569134854d268751706725a"
@@ -61,13 +69,27 @@ class SlackSubmissionsController < ApplicationController
         when 'tomorrow'
           Date.tomorrow
         else
-          nil #TODO some error message and show them the dialog again
+          json_response({text: "What? You plan too far in advance. Try being more spontaneous! Come back closer to when you want to go out."}, :created)
+          return
         end
         plan.update(rough_time: date)
-        json_response({text: "Great. To add some options for people to do, enter `/letshang add`"}, :ok)
+
+        # ask the user to suggest an activity option
+        SlackSubmissionsHelper.option_dialog(plan, payload['trigger_id'])
+        json_response({}, :ok)
+
+      when /^after_option/
+        plan = Plan.find(payload['callback_id'].split(':').last)
+        if payload['actions'][0]['value'] == 'yes'
+          SlackSubmissionsHelper.option_dialog(plan, payload['trigger_id'])
+        else
+          json_response({text: "OK. We're done."}, :created)
+        end
+
       else
         json_response("Uh oh! I don't know what callback that was for")
       end
+
     else
       json_response("Uh oh! Something went wrong. I'm sure someone will fix me soon.")
     end
