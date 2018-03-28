@@ -17,7 +17,15 @@
     <li><%= invitation.user.slack_id %>
   <% end %>
   </ul>
+</p>
 
+<p>
+  <strong>Options:</strong>
+  <ul>
+  <% @plan.options.each do |option| %>
+    <li><%= option.title %>
+  <% end %>
+  </ul>
 </p>
 
 <p>

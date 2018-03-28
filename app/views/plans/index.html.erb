@@ -8,7 +8,8 @@
       <th>Owner</th>
       <th>Rough time</th>
       <th>Title</th>
-      <th>Guest Count</th>
+      <th>#Guests</th>
+      <th>#Options</th>
       <th colspan="3"></th>
     </tr>
   </thead>
@@ -20,6 +21,7 @@
         <td><%= plan.rough_time %></td>
         <td><%= plan.title || 'no title' %></td>
         <td><%= plan.invitations.count %></td>
+        <td><%= plan.options.count %></td>
         <td><%= link_to 'Show', plan %></td>
         <td><%= link_to 'Edit', edit_plan_path(plan) %></td>
         <td><%= link_to 'Destroy', plan, method: :delete, data: { confirm: 'Are you sure?' } %></td>
