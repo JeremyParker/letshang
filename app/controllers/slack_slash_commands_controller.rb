@@ -24,7 +24,6 @@ class SlackSlashCommandsController < ApplicationController
   #   "action"=>"create"
   # }
   def create
-    puts request
     return json_response({}, :forbidden) unless valid_slack_token?
 
     case params[:text]

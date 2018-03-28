@@ -25,7 +25,7 @@ want to do. I’ll find out who's free and what they're up for doing. If I can g
 to do within 2 hours, then *BOOM* your plans are made! I'll let everyone know what you're doing. If not, I'll let you \
 know you still don't have plans.
 To get started type `/letshang` followed by a list of your friends. For example ```/letshang @flavri @keely @marc @johannes \
-@akbar @cl47 @dorothea @sonia @whoever @rbm```
+@akbar @cwh91 @dorothea @sonia @rmb```
 The more people you invite, the more likely you'll have a plan!"
 
   def self.intro
