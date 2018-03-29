@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180325231102) do
+ActiveRecord::Schema.define(version: 20180329231048) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -23,6 +23,7 @@ ActiveRecord::Schema.define(version: 20180325231102) do
   create_table "invitations", force: :cascade do |t|
     t.integer "user_id"
     t.integer "plan_id"
+    t.boolean "available"
   end
 
   create_table "option_plans", force: :cascade do |t|
