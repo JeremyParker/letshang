@@ -83,8 +83,18 @@ class SlackSubmissionsController < ApplicationController
         if payload['actions'][0]['value'] == 'yes'
           SlackSubmissionsHelper.option_dialog(plan, payload['trigger_id'])
         else
-          json_response({text: "OK. We're done."}, :created)
+          if plan.rough_time.past?
+            json_response({text: "Woah there! The time of the gathering you're trying to organize is past!"}, :created)
+          else
+            # start a convo with all guests
+            plan.invitations.each { |invitation| SlackSubmissionsHelper.invitation(plan, invitation.user, payload['trigger_id']) }
+            json_response({text: "OK. A personalized invitation has been sent to everyone you invited."}, :created)
+          end
         end
+
+      when /^invitation_availability/
+        plan = Plan.find(payload['callback_id'].split(':')[1])
+        user = User.find(payload['callback_id'].split(':').last)
 
       else
         json_response("Uh oh! I don't know what callback that was for")

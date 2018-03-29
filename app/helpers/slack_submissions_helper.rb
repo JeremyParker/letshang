@@ -1,4 +1,5 @@
 module SlackSubmissionsHelper
+  FALLBACK_MESSAGE = "Sorry, this bot isn't going to work on your system."
 
   # ask the user about what time they want to do this
   def self.rough_time_message(plan, channel_id)
@@ -85,7 +86,7 @@ module SlackSubmissionsHelper
         {
           "callback_id": callback_id,
           "text": "Would you like to give people another option?",
-          "fallback": "Sorry, this bot isn't going to work on your system.",
+          "fallback": FALLBACK_MESSAGE,
           "attachment_type": "default",
           "actions": [
             {
@@ -123,4 +124,42 @@ module SlackSubmissionsHelper
     )
   end
 
+  # send an invitation to a user to start their "receiver experience"
+  def self.invitation(plan, user, trigger_id)
+    date_string = plan.rough_time.today? ? 'today' : 'tomorrow'
+    invitation_message = "TODO: use recipient's name and tag the Plan Owner: @owner wants to \
+get a group of people together to do something #{date_string}. As long as at least \
+#{plan.minimum_attendee_count} people can agree on something to do, we'll do it. You'll \
+know the result wtihin two hours"
+    client = SlackHelper.set_up_client(plan.owner)
+    response = client.conversations_open(return_im: true, users: user.slack_id)
+    channel_id = response[:channel][:id]
+    callback_id = "invitation_availability:#{plan.id}:#{user.id}"
+    client.chat_postMessage(
+      channel: channel_id,
+      text: invitation_message,
+      attachments: [
+        {
+          "callback_id": callback_id,
+          "text": "Are you in?",
+          "fallback": FALLBACK_MESSAGE,
+          "attachment_type": "default",
+          "actions": [
+            {
+              "name": "response",
+              "text": "Not this time :disappointed:",
+              "type": "button",
+              "value": "no"
+            },
+            {
+              "name": "response",
+              "text": "Maybe - what are the options?",
+              "type": "button",
+              "value": "yes"
+            }
+          ]
+        }
+      ]
+    )
+  end
 end
