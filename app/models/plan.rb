@@ -10,9 +10,9 @@ class Plan < ApplicationRecord
   has_many :option_plans
   has_many :options, through: :option_plans
 
-  def self.start_plan(owner, invited_users)
-    # create a plan record and add invitation records for these users
-    new_plan = Plan.create(owner: owner)
+  # create a plan record and add invitation records for these users
+  def self.start_plan(owner, invited_users, tz_offset)
+    new_plan = Plan.create(owner: owner, tz_offset: tz_offset)
     invited_users.each do |invited_user|
       new_plan.invitations << Invitation.create(user: invited_user)
     end
