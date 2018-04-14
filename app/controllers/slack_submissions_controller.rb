@@ -63,11 +63,13 @@ class SlackSubmissionsController < ApplicationController
       when /^plan_time/
         plan = Plan.find(payload['callback_id'].split(':').last)
         input = payload['actions'][0]['selected_options'][0]['value']
+        timezone = ActiveSupport::TimeZone.new(plan.timezone)
+        Time.zone = timezone
         date = case input
         when 'today'
-          Date.today
+          timezone.today
         when 'tomorrow'
-          Date.tomorrow
+          timezone.tomorrow
         else
           json_response({text: "What? You plan too far in advance. Try being more spontaneous! Come back closer to when you want to go out."}, :created)
           return
@@ -80,21 +82,34 @@ class SlackSubmissionsController < ApplicationController
 
       when /^after_option/
         plan = Plan.find(payload['callback_id'].split(':').last)
+        timezone = ActiveSupport::TimeZone.new(plan.timezone)
+        Time.zone = timezone
+        if timezone.today > plan.rough_time
+          json_response({text: "Woah there! The time of the gathering you're trying to organize is past!"}, :created)
+          return
+        end
+
         if payload['actions'][0]['value'] == 'yes'
           SlackSubmissionsHelper.option_dialog(plan, payload['trigger_id'])
         else
-          if plan.rough_time.past?
-            json_response({text: "Woah there! The time of the gathering you're trying to organize is past!"}, :created)
-          else
-            # start a convo with all guests
-            plan.invitations.each { |invitation| SlackSubmissionsHelper.invitation(plan, invitation.user, payload['trigger_id']) }
-            json_response({text: "OK. A personalized invitation has been sent to everyone you invited."}, :created)
-          end
+          # start a convo with all guests
+          plan.invitations.each { |invitation| SlackSubmissionsHelper.invitation(plan, invitation.user, payload['trigger_id']) }
+          json_response({text: "OK. A personalized invitation has been sent to everyone you invited."}, :created)
         end
 
       when /^invitation_availability/
-        plan = Plan.find(payload['callback_id'].split(':')[1])
-        user = User.find(payload['callback_id'].split(':').last)
+        plan_id = payload['callback_id'].split(':')[1]
+        user_id = payload['callback_id'].split(':').last
+        if payload['actions'][0]['value'] == 'yes'
+          # require 'pry'; binding.pry
+          SlackSubmissionsHelper.show_option()
+          json_response("Awesome. How do you feel about doing this?")
+        else
+          # guest is not available. Mark invitation and end.
+          invitation = Invitation.where(user: user_id, plan: plan_id).last
+          invitation.update(available: false)
+          json_response("OK, maybe we'll see you next time.")
+        end
 
       else
         json_response("Uh oh! I don't know what callback that was for")

@@ -34,10 +34,8 @@ class SlackSlashCommandsController < ApplicationController
       team = Team.where(team_id: params[:team_id]).order(:updated_at).last
       initiating_user = User.maybe_create(params[:user_id], team)
       users_info = SlackHelper.user_info(initiating_user)
-      require 'pry'; binding.pry
-
       invited_users = parse_user_ids(params[:text]).map { |u| User.maybe_create(u, team) }
-      plan = Plan.start_plan(initiating_user, invited_users, users_info[:tz_offset])
+      plan = Plan.start_plan(initiating_user, invited_users, users_info[:tz_offset], users_info[:tz])
       SlackSlashCommandsHelper.plan_size_dialog(plan, params[:trigger_id])
 
     when /help$/i # the string 'help' (case insensitive)
