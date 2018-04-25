@@ -11,7 +11,7 @@ module SlackHelper
   def self.user_info(user)
     client = SlackHelper.set_up_client(user)
     users_info = client.users_info({ user: user.slack_id, include_locale: true })
-    raise Error("Something went wrong") unless users_info[:ok]
+    raise "Something went wrong" unless users_info[:ok]
     users_info[:user]
   end
 

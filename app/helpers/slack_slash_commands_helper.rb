@@ -39,7 +39,7 @@ The more people you invite, the more likely you'll have a plan!"
           {
             "type": "text",
             "subtype": "number",
-            "label": "Minimum Group Size",
+            "label": "At least how many?",
             "hint": "What's the smallest number of these people you'd want to get together with? (Enter a number between 1 and #{plan.invitations.count})",
             "placeholder": "Enter a number",
             "name": "plan_size",

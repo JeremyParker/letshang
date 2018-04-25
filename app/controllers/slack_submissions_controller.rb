@@ -77,7 +77,7 @@ class SlackSubmissionsController < ApplicationController
         plan.update(rough_time: date)
 
         # ask the user to suggest an activity option
-        SlackSubmissionsHelper.option_dialog(plan, payload['trigger_id'])
+        SlackSubmissionsHelper.new_option(plan, payload['trigger_id'])
         json_response({}, :ok)
 
       when /^after_option/
@@ -90,33 +90,54 @@ class SlackSubmissionsController < ApplicationController
         end
 
         if payload['actions'][0]['value'] == 'yes'
-          SlackSubmissionsHelper.option_dialog(plan, payload['trigger_id'])
+          SlackSubmissionsHelper.new_option(plan, payload['trigger_id'])
         else
           # start a convo with all guests
           plan.invitations.each { |invitation| SlackSubmissionsHelper.invitation(plan, invitation.user, payload['trigger_id']) }
           json_response({text: "OK. A personalized invitation has been sent to everyone you invited."}, :created)
         end
 
-      when /^invitation_availability/
+      when /^invitation_availability/ # callback_id looks like "invitation_availability:<plan_id>:<user_id>"
         plan_id = payload['callback_id'].split(':')[1]
         user_id = payload['callback_id'].split(':').last
+        invitation = Invitation.where(user: user_id, plan: plan_id).last
         if payload['actions'][0]['value'] == 'yes'
-          # require 'pry'; binding.pry
-          SlackSubmissionsHelper.show_option()
-          json_response("Awesome. How do you feel about doing this?")
+          invitation.update(available: true)
+          maybe_show_next_option(plan_id, user_id, payload['trigger_id'])
         else
-          # guest is not available. Mark invitation and end.
-          invitation = Invitation.where(user: user_id, plan: plan_id).last
           invitation.update(available: false)
           json_response("OK, maybe we'll see you next time.")
         end
 
+      when /^show_option/ # show_option:#{option_plan.id}:#{user.id}
+        option_plan_id = payload['callback_id'].split(':')[1]
+        user_id = payload['callback_id'].split(':').last
+        # record the answer
+        Answer.create(
+          value: payload['actions'][0]['value'] == 'yes',
+          user_id: user_id,
+          option_plan_id: option_plan_id
+        )
+        option_plan = OptionPlan.find(option_plan_id)
+        maybe_show_next_option(option_plan.plan.id, user_id, payload['trigger_id'])
+
       else
         json_response("Uh oh! I don't know what callback that was for")
-      end
 
+      end
     else
       json_response("Uh oh! Something went wrong. I'm sure someone will fix me soon.")
+    end
+  end
+
+  private
+
+  def maybe_show_next_option(plan_id, user_id, trigger_id)
+    available_option_plans = OptionPlan.available_option_plans(plan_id, user_id)
+    if available_option_plans.present?
+      SlackSubmissionsHelper.show_option(available_option_plans.first, User.find(user_id), trigger_id)
+    else
+      json_response("OK. Within two hours we'll let you know if you have plans, and what you're doing.")
     end
   end
 end

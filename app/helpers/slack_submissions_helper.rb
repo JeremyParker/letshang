@@ -19,7 +19,7 @@ module SlackSubmissionsHelper
               "type": "select",
               "options": [
                 {
-                    "text": "Tonight",
+                    "text": "Today/Tonight",
                     "value": "today"
                 },
                 {
@@ -39,7 +39,7 @@ module SlackSubmissionsHelper
   end
 
   # Ask the plan owner to enter an activity option
-  def self.option_dialog(plan, trigger_id)
+  def self.new_option(plan, trigger_id)
     client = SlackHelper.set_up_client(plan.owner)
     client.dialog_open(
       trigger_id: trigger_id,
@@ -85,7 +85,7 @@ module SlackSubmissionsHelper
       attachments = [
         {
           "callback_id": callback_id,
-          "text": "Would you like to give people another option?",
+          "text": "Would you like to give your guests another option to choose from?",
           "fallback": FALLBACK_MESSAGE,
           "attachment_type": "default",
           "actions": [
@@ -162,4 +162,39 @@ know the result wtihin two hours"
       ]
     )
   end
+
+  # show one of the event options to a guest
+  def self.show_option(option_plan, user, trigger_id)
+    client = SlackHelper.set_up_client(user)
+    response = client.conversations_open(return_im: true, users: user.slack_id)
+    channel_id = response[:channel][:id]
+    callback_id = "show_option:#{option_plan.id}:#{user.id}"
+    client.chat_postMessage(
+      channel: channel_id,
+      text: 'How about doing this?',
+      attachments: [
+        {
+          "callback_id": callback_id,
+          "text": option_plan.option.title,
+          "fallback": FALLBACK_MESSAGE,
+          "attachment_type": "default",
+          "actions": [
+            {
+              "name": "response",
+              "text": "No thanks",
+              "type": "button",
+              "value": "no"
+            },
+            {
+              "name": "response",
+              "text": "I'd do that",
+              "type": "button",
+              "value": "yes"
+            }
+          ]
+        }
+      ]
+    )
+  end
+
 end
