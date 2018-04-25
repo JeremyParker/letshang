@@ -13,10 +13,9 @@ class Plan < ApplicationRecord
   # create a plan record and add invitation records for these users
   # @param owner - User object
   # @param invited_users - Array of User objects for who's invited
-  # @tz_offset - Integer for seconds offset from UTC for this plans
   # @timezone_name - String with the name of the timezone for this plan
-  def self.start_plan(owner, invited_users, tz_offset, timezone)
-    new_plan = Plan.create(owner: owner, tz_offset: tz_offset, timezone: timezone)
+  def self.start_plan(owner, invited_users, timezone)
+    new_plan = Plan.create(owner: owner, timezone: timezone)
     invited_users.each do |invited_user|
       new_plan.invitations << Invitation.create(user: invited_user)
     end
