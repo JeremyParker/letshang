@@ -19,7 +19,7 @@ class SlackSubmissionsController < ApplicationController
   # }
   def create
     payload = JSON.parse params[:payload]
-    return json_response({}, :forbidden) unless valid_slack_token? payload['token']
+    return json_response('', :forbidden) unless valid_slack_token? payload['token']
 
     case payload['type']
 
@@ -31,14 +31,14 @@ class SlackSubmissionsController < ApplicationController
         plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
         plan.update(minimum_attendee_count: minimum_attendee_count)
         SlackSubmissionsHelper.rough_time_message(plan, payload['channel']['id'])
-        json_response({}, :ok)
+        json_response('', :ok)
 
       when /^save_plan_option/
         plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
         title = payload['submission']['option_title']
         plan.options << Option.create(title: title)
         SlackSubmissionsHelper.option_saved_message(plan, payload['channel']['id'])
-        json_response({}, :ok)
+        json_response('', :ok)
     end
 
 
@@ -78,9 +78,10 @@ class SlackSubmissionsController < ApplicationController
 
         # ask the user to suggest an activity option
         SlackSubmissionsHelper.new_option(plan, payload['trigger_id'])
-        json_response({}, :ok)
+        json_response('', :ok)
 
-      when /^after_option/
+      # This is a response from the OptionNew "form" that we showed the Owner
+      when /^option_new/
         plan = Plan.find(payload['callback_id'].split(':').last)
         timezone = ActiveSupport::TimeZone.new(plan.timezone)
         Time.zone = timezone
@@ -94,6 +95,7 @@ class SlackSubmissionsController < ApplicationController
         else
           # start a convo with all guests
           plan.invitations.each { |invitation| SlackSubmissionsHelper.invitation(plan, invitation.user, payload['trigger_id']) }
+          plan.update(expiration: timezone.now + Plan::HOURS*06*60) # start the timer on when this Plan expires
           json_response({text: "OK. A personalized invitation has been sent to everyone you invited."}, :created)
         end
 
@@ -103,15 +105,20 @@ class SlackSubmissionsController < ApplicationController
         invitation = Invitation.where(user: user_id, plan: plan_id).last
         if payload['actions'][0]['value'] == 'yes'
           invitation.update(available: true)
-          maybe_show_next_option(plan_id, user_id, payload['trigger_id'])
+          maybe_show_next_option(plan_id, user_id)
         else
           invitation.update(available: false)
-          json_response("OK, maybe we'll see you next time.")
+          json_response({text: "OK, maybe we'll see you next time."}, :created)
         end
 
+      # This is a response from when we showed a guest an option
       when /^show_option/ # show_option:#{option_plan.id}:#{user.id}
         option_plan_id = payload['callback_id'].split(':')[1]
         user_id = payload['callback_id'].split(':').last
+
+        # TODO: plan_open_check - make sure their answer matters before recording it
+        # TODO: prevent them from answering multiple times to the same option_plan
+
         # record the answer
         Answer.create(
           value: payload['actions'][0]['value'] == 'yes',
@@ -119,25 +126,51 @@ class SlackSubmissionsController < ApplicationController
           option_plan_id: option_plan_id
         )
         option_plan = OptionPlan.find(option_plan_id)
-        maybe_show_next_option(option_plan.plan.id, user_id, payload['trigger_id'])
+        shown = maybe_show_next_option(option_plan.plan.id, user_id)
+        if !shown && !evaluate(option_plan.plan)
+          json_response({text: "OK. Within two hours we'll let you know if you have plans, and what you're doing."}, :created)
+        end
 
       else
-        json_response("Uh oh! I don't know what callback that was for")
+        json_response({text: "Uh oh! I don't know what callback that was for"}, :created)
 
       end
     else
-      json_response("Uh oh! Something went wrong. I'm sure someone will fix me soon.")
+      json_response({text: "Uh oh! Something went wrong. I'm sure someone will fix me soon."}, :created)
     end
   end
 
   private
 
-  def maybe_show_next_option(plan_id, user_id, trigger_id)
-    available_option_plans = OptionPlan.available_option_plans(plan_id, user_id)
-    if available_option_plans.present?
-      SlackSubmissionsHelper.show_option(available_option_plans.first, User.find(user_id), trigger_id)
-    else
-      json_response("OK. Within two hours we'll let you know if you have plans, and what you're doing.")
+  def maybe_show_next_option(plan_id, user_id)
+    opts = OptionPlan.available_option_plans(plan_id, user_id)
+    SlackSubmissionsHelper.show_option(opts.first, User.find(user_id)) if opts.present?
+    opts.present? # return true if we showed them another option
+  end
+
+  # check the state of the plan and take appropriate action
+  # This can be called from a cron job
+  # @Return true if some action happened - like we sent out messages to folks, or something
+  def evaluate(plan)
+    case plan.poll
+    when Plan::AGREED
+      # Don't tell people who haven't responded yet. Too much noise. Wait for them to respond, then tell 'em.
+      (plan.attendees << plan.owner).each { |user| SlackSubmissionsHelper.send_success_result(plan.winning_option_plan, user) }
+      true
+    when Plan::EXPIRED
+      # Only tell people who said they were available. Too much noise otherwise. Wait for them to respond, then tell 'em.
+      waiting_guests = Invitation.where(plan: plan).where(available: true).map(&:user).uniq
+      (waiting_guests << plan.owner).each { |user| SlackSubmissionsHelper.send_failure_result(plan, user) }
+      true
+    when Plan::SUCCEEDED, Plan::FAILED, Plan::OPEN
+      false
     end
+  end
+
+  # Check if the plan is still open. Call this on every response, so if someone is trying to
+  # respond to a bunch of options at the moment that the plan is decided on, they don't have
+  # to waste their time filling out the rest of the options.
+  def plan_open_check
+    true # TODO:
   end
 end

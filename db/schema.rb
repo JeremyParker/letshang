@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180425225956) do
+ActiveRecord::Schema.define(version: 20180427201656) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -57,6 +57,8 @@ ActiveRecord::Schema.define(version: 20180425225956) do
     t.integer "minimum_attendee_count"
     t.string "timezone"
     t.datetime "expiration"
+    t.boolean "succeeded"
+    t.integer "winning_option_plan_id"
   end
 
   create_table "teams", force: :cascade do |t|

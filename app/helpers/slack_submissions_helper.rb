@@ -64,7 +64,7 @@ module SlackSubmissionsHelper
 
   # tell the user their option was saved, and ask if they want to add another.
   def self.option_saved_message(plan, channel_id)
-    callback_id = "after_option:#{plan.id}"
+    callback_id = "option_new:#{plan.id}"
     if plan.options.count >= 8
       attachments = [
         {
@@ -126,10 +126,9 @@ module SlackSubmissionsHelper
 
   # send an invitation to a user to start their "receiver experience"
   def self.invitation(plan, user, trigger_id)
-    date_string = plan.rough_time.today? ? 'today' : 'tomorrow'
     invitation_message = "TODO: use recipient's name and tag the Plan Owner: @owner wants to \
-get a group of people together to do something #{date_string}. As long as at least \
-#{plan.minimum_attendee_count} people can agree on something to do, we'll do it. You'll \
+get a group of people together to do something #{plan.formatted_rough_time}. As long as at least \
+#{plan.minimum_attendee_count + 1} people can agree on something to do, we'll do it. You'll \
 know the result wtihin two hours"
     client = SlackHelper.set_up_client(plan.owner)
     response = client.conversations_open(return_im: true, users: user.slack_id)
@@ -164,7 +163,7 @@ know the result wtihin two hours"
   end
 
   # show one of the event options to a guest
-  def self.show_option(option_plan, user, trigger_id)
+  def self.show_option(option_plan, user)
     client = SlackHelper.set_up_client(user)
     response = client.conversations_open(return_im: true, users: user.slack_id)
     channel_id = response[:channel][:id]
@@ -197,4 +196,33 @@ know the result wtihin two hours"
     )
   end
 
+  # send the successful result to a user (guest or owner)
+  def self.send_success_result(option_plan, user)
+    client = SlackHelper.set_up_client(user)
+    response = client.conversations_open(return_im: true, users: user.slack_id)
+    channel_id = response[:channel][:id]
+    client.chat_postMessage(
+      channel: channel_id,
+      text: 'Congrats! You have plans!',
+      attachments: [
+        {
+          "callback_id": '', # no need for a callback ID. They can't do anything.
+          "text": option_plan.option.title,
+          "fallback": FALLBACK_MESSAGE,
+          "attachment_type": "default",
+        }
+      ]
+    )
+  end
+
+  # send a failure message to a user (guest or owner)
+  def self.send_failure_result(plan, user)
+    client = SlackHelper.set_up_client(user)
+    response = client.conversations_open(return_im: true, users: user.slack_id)
+    channel_id = response[:channel][:id]
+    client.chat_postMessage(
+      channel: channel_id,
+      text: "Sorry, people couldn't agree on a plan for #{plan.formatted_rough_time}. The good news is you can try again!",
+    )
+  end
 end
