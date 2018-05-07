@@ -28,44 +28,51 @@ class Plan < ApplicationRecord
     new_plan
   end
 
-  # This is the method that should get called on all open plans (plan.succeeded == NULL)
-  # Updates the state of the plan, and returns the result
   SUCCEEDED = 0 # Plan succeeded, people were notified. No action required.
   FAILED = 1    # Plan didn't succeed, people were notified. No action required.
-  AGREED = 2    # Folks have agreed, haven't been notified yet (only gets returned once)
-  EXPIRED = 3   # Expiration has passed, but haven't notified yet (only gets returned once)
-  OPEN = 4      # Still working on it
+  AGREED = 2    # Folks have agreed, haven't been notified yet
+  EXPIRED = 3   # Expiration has passed, but haven't notified yet
+  REJECTED = 4  # Too many people said no/unavailable, but haven't notified yet
+  OPEN = 5      # Still working on it
   # TODO - make a status for "logically can't be agreed on. See `can_succeed`"
-  def poll
+  def status
+    require 'pry'; binding.pry
     if succeeded
       SUCCEEDED
     elsif succeeded == false
       FAILED
-    elsif expired?
-      self.update(succeeded: false)
-      EXPIRED
     elsif agreed_option_plans.present?
-      # TODO: better winner selection logic than random
-      self.update(winning_option_plan: agreed_option_plans.sample, succeeded: true)
       AGREED
+    elsif !can_succeed
+      REJECTED
+    elsif expired?
+      EXPIRED
     else
       OPEN
     end
   end
 
+  def choose_winning_option_plan
+    # TODO: better winner selection logic than random
+    self.update(winning_option_plan: agreed_option_plans.sample)
+  end
+
   # Find the options for this plan that the minimum_attendee_count have agreed on.
   def agreed_option_plans
     answers = Answer.where(option_plan: option_plans).group_by(&:option_plan)
-    option_plans.select { |op| answers[op].select(&:value).count >= minimum_attendee_count }
+    option_plans.select { |op| answers[op] && answers[op].select(&:value).count >= minimum_attendee_count }
   end
 
   def expired?
     ActiveSupport::TimeZone.new(timezone).now > expiration if expiration
   end
 
-  # is there any way this plan could succeed? I.e. have too many people said 'no', or has it timed out?
+  # is there any way this plan could succeed? I.e. have too many people said 'no'.
   def can_succeed
-    # TODO
+    unavailable_count = invitations.where(:available => false).count
+    option_plans.any? do |option_plan|
+      invitations.count - (unavailable_count + option_plan.not_interested_count) >= minimum_attendee_count
+    end
   end
 
   # who has responded 'yes' to the winning option_plan

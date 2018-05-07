@@ -33,9 +33,10 @@ The more people you invite, the more likely you'll have a plan!"
       trigger_id: trigger_id,
       dialog: {
         "callback_id": "set_plan_size:#{plan.id}",
-        "title": "How many of these people",
+        "title": "How many people?",
         "submit_label": "OK",
         "elements": [
+          # TODO: Better intro message, like "Great. We'll start planning an event with @tester, @keely and @flavri."
           {
             "type": "text",
             "subtype": "number",

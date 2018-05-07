@@ -14,4 +14,8 @@ class OptionPlan < ApplicationRecord
     option_plans = OptionPlan.includes(:option, :answers).where(plan: plan_id)
     option_plans.select { |op| op.answers.where(user: user_id).count == 0 }
   end
+
+  def not_interested_count
+    answers.where(:value => false).count
+  end
 end

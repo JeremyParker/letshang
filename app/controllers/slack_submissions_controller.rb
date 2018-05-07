@@ -108,6 +108,7 @@ class SlackSubmissionsController < ApplicationController
           maybe_show_next_option(plan_id, user_id)
         else
           invitation.update(available: false)
+          evaluate(Plan.find(plan_id))
           json_response({text: "OK, maybe we'll see you next time."}, :created)
         end
 
@@ -152,15 +153,18 @@ class SlackSubmissionsController < ApplicationController
   # This can be called from a cron job
   # @Return true if some action happened - like we sent out messages to folks, or something
   def evaluate(plan)
-    case plan.poll
+    case plan.status
     when Plan::AGREED
+      plan.choose_winning_option_plan
       # Don't tell people who haven't responded yet. Too much noise. Wait for them to respond, then tell 'em.
       (plan.attendees << plan.owner).each { |user| SlackSubmissionsHelper.send_success_result(plan.winning_option_plan, user) }
+      plan.update(succeeded: true)
       true
-    when Plan::EXPIRED
+    when Plan::EXPIRED, Plan::REJECTED
       # Only tell people who said they were available. Too much noise otherwise. Wait for them to respond, then tell 'em.
       waiting_guests = Invitation.where(plan: plan).where(available: true).map(&:user).uniq
       (waiting_guests << plan.owner).each { |user| SlackSubmissionsHelper.send_failure_result(plan, user) }
+      plan.update(succeeded: false)
       true
     when Plan::SUCCEEDED, Plan::FAILED, Plan::OPEN
       false
