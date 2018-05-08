@@ -134,7 +134,7 @@ know the result wtihin two hours"
     response = client.conversations_open(return_im: true, users: user.slack_id)
     channel_id = response[:channel][:id]
     callback_id = "invitation_availability:#{plan.id}:#{user.id}"
-    client.chat_postMessage(
+    client.chat_postEphemeral(
       channel: channel_id,
       text: invitation_message,
       attachments: [
@@ -168,7 +168,7 @@ know the result wtihin two hours"
     response = client.conversations_open(return_im: true, users: user.slack_id)
     channel_id = response[:channel][:id]
     callback_id = "show_option:#{option_plan.id}:#{user.id}"
-    client.chat_postMessage(
+    client.chat_postEphemeral(
       channel: channel_id,
       text: 'How about doing this?',
       attachments: [
@@ -201,6 +201,7 @@ know the result wtihin two hours"
     client = SlackHelper.set_up_client(user)
     response = client.conversations_open(return_im: true, users: user.slack_id)
     channel_id = response[:channel][:id]
+    # chat_postMessage not chat_postEphemeral, so it sticks around for later reference.
     client.chat_postMessage(
       channel: channel_id,
       text: 'Congrats! You have plans!',
