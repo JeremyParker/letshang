@@ -1,5 +1,6 @@
 include Response
 include SlackToken
+include ParseUsers
 
 class SlackSubmissionsController < ApplicationController
   protect_from_forgery :except => [:create] # we check the token 'manually' with `valid_slack_token`
@@ -29,14 +30,23 @@ class SlackSubmissionsController < ApplicationController
       when /^set_plan_size/
         minimum_attendee_count = payload['submission']['plan_size'].to_i # TODO - error handling, bounds checking
         plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
-        plan.update(minimum_attendee_count: minimum_attendee_count)
+        plan.update(minimum_attendee_count: minimum_attendee_count) # TODO - move this to plan.rb
         SlackSubmissionsHelper.rough_time_message(plan, payload['channel']['id'])
         json_response('', :ok)
 
       when /^save_plan_option/
         plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
         title = payload['submission']['option_title']
-        plan.options << Option.create(title: title)
+        description  = payload['submission']['option_description']
+        meeting_address  = payload['submission']['option_meeting_address']
+        meeting_time  = payload['submission']['option_meeting_time']
+        plan.options << Option.create(
+          title: title,
+          description: description,
+          meeting_address:meeting_address,
+          meeting_time: meeting_time,
+          reusable: false
+        )
         SlackSubmissionsHelper.option_saved_message(plan, payload['channel']['id'])
         json_response('', :ok)
     end
@@ -94,9 +104,12 @@ class SlackSubmissionsController < ApplicationController
           SlackSubmissionsHelper.new_option(plan, payload['trigger_id'])
         else
           # start a convo with all guests
-          plan.invitations.each { |invitation| SlackSubmissionsHelper.invitation(plan, invitation.user, payload['trigger_id']) }
+          guests = plan.invitations.map(&:user)
+          guests.each { |guest| SlackSubmissionsHelper.invitation(plan, guest, payload['trigger_id']) }
           plan.update(expiration: timezone.now + Plan::HOURS*06*60) # start the timer on when this Plan expires
-          json_response({text: "OK. A personalized invitation has been sent to everyone you invited."}, :created)
+
+          guest_names_string = format_user_names(guests.map(&:slack_id))
+          json_response({text: "OK. A personalized invitation has been sent to " + guest_names_string}, :created)
         end
 
       when /^invitation_availability/ # callback_id looks like "invitation_availability:<plan_id>:<user_id>"

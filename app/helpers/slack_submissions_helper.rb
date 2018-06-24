@@ -45,17 +45,44 @@ module SlackSubmissionsHelper
       trigger_id: trigger_id,
       dialog: {
         "callback_id": "save_plan_option:#{plan.id}",
-        "title": "Sugest an option",
+        "title": "Suggest an option",
         "submit_label": "OK",
         "elements": [
           {
             "type": "text",
-            "label": "Title",
+            "label": "Activity",
             "hint": "Provide a short label for this option, like \"Drinks at Moe's\"",
-            "placeholder": "Title",
+            "placeholder": "Activity",
             "name": "option_title",
             "min_length": 1,
             "max_length": 64
+          },
+          {
+            "type": "textarea",
+            "label": "Description",
+            "optional": true,
+            "hint": "More information about this activity, maybe a URL with details... whatever.",
+            "placeholder": "More details if necessary",
+            "name": "option_description"
+          },
+          {
+            "type": "text",
+            "label": "Exact Meeting Address",
+            "optional": true,
+            "hint": "A street address where we'll meet, like \"720 Evergreen Terrace, Sringfield \"",
+            "placeholder": "Address",
+            "name": "option_meeting_address",
+            "min_length": 0,
+            "max_length": 150
+          },
+          {
+            "type": "text",
+            "label": "Exact Meeting Time",
+            "hint": "What time will we meet there? Like \"7:30pm\"",
+            "placeholder": "Meeting Time",
+            "name": "option_meeting_time",
+            "min_length": 1,
+            "max_length": 8
           }
         ]
       }
@@ -119,7 +146,7 @@ module SlackSubmissionsHelper
     client.chat_postEphemeral(
       channel: channel_id,
       user: plan.owner.slack_id,
-      text: "Great idea! That option is saved. " + plan_list,
+      text: "Great idea! That option is saved.\n" + plan_list,
       attachments: attachments
     )
   end

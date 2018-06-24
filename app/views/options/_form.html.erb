@@ -17,8 +17,18 @@
   </div>
 
   <div class="field">
+    <%= form.label :description %>
+    <%= form.text_area :description, id: :option_description %>
+  </div>
+
+  <div class="field">
+    <%= form.label :meeting_address %>
+    <%= form.text_field :meeting_address, id: :option_meeting_address %>
+  </div>
+
+  <div class="field">
     <%= form.label :meeting_time %>
-    <%= form.datetime_select :meeting_time, id: :option_meeting_time %>
+    <%= form.text_field :meeting_time, id: :option_meeting_time %>
   </div>
 
   <div class="field">
