@@ -7,14 +7,14 @@
 
 <p>
   <strong>Owner:</strong>
-  <%= @plan.owner.slack_id %>
+  <%= @plan.owner.slack_user_name %>
 </p>
 
 <p>
   <strong>Guests:</strong>
   <ul>
   <% @plan.invitations.each do |invitation| %>
-    <li><%= invitation.user.slack_id %>
+    <li><%= invitation.user.slack_user_name %>
   <% end %>
   </ul>
 </p>

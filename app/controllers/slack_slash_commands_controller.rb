@@ -15,7 +15,7 @@ class SlackSlashCommandsController < ApplicationController
   #   "channel_id"=>"CXXXXXX",
   #   "channel_name"=>"some_channel_name",
   #   "user_id"=>"UXXXXXXX",
-  #   "user_name"=>"my name",
+  #   "user_name"=>"Lauren", (same as `user_info[:name]`)
   #   "command"=>"/letshang",
   #   "text"=>"",
   #   "response_url"=>"https://hooks.slack.com/commands/T02CVNHRP/327417106544/iM9ViW4HVADaiU2zd9iSvEqX",
@@ -32,9 +32,12 @@ class SlackSlashCommandsController < ApplicationController
       user_names = parse_user_names(params[:text])
       return json_response(SlackSlashCommandsHelper.start_plan_more_people, :created) if user_names.length < 2
       team = Team.where(team_id: params[:team_id]).order(:updated_at).last
-      initiating_user = User.maybe_create(params[:user_id], team)
+      # get an array of [id, name] pairs
+      user_id_name_array = parse_user_ids(params[:text]).zip(parse_user_names(params[:text])).uniq{ |u| u[0] }
+      invited_users = user_id_name_array.map { |user_id_name| User.maybe_create(user_id_name[0], user_id_name[1], team) }
+
+      initiating_user = User.maybe_create(params[:user_id], params[:user_name], team)
       users_info = SlackHelper.user_info(initiating_user)
-      invited_users = parse_user_ids(params[:text]).uniq.map { |u| User.maybe_create(u, team) }
       plan = Plan.start_plan(initiating_user, invited_users, users_info[:tz])
       SlackSlashCommandsHelper.plan_size_dialog(plan, params[:trigger_id])
 

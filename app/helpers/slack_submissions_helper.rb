@@ -112,21 +112,21 @@ module SlackSubmissionsHelper
       ]
     end
 
-    plan_list = plan.options.reduce("You've suggested these options:\n") do |msg, opt|
+    plan_list = plan.options.reduce("You have these options so far:\n") do |msg, opt|
       msg + ":black_small_square: #{opt.title}\n"
     end
     client = SlackHelper.set_up_client(plan.owner)
     client.chat_postEphemeral(
       channel: channel_id,
       user: plan.owner.slack_id,
-      text: "Great idea! That option is saved." + plan_list,
+      text: "Great idea! That option is saved. " + plan_list,
       attachments: attachments
     )
   end
 
-  # send an invitation to a user to start their "receiver experience"
+  # send an invitation to a user to start their "receiver experience".
   def self.invitation(plan, user, trigger_id)
-    invitation_message = "TODO: use recipient's name and tag the Plan Owner: @owner wants to \
+    invitation_message = "Hi #{user.slack_user_name}! #{plan.owner.slack_user_name} wants to \
 get a group of people together to do something #{plan.formatted_rough_time}. As long as at least \
 #{plan.minimum_attendee_count + 1} people can agree on something to do, we'll do it. You'll \
 know the result wtihin two hours"
@@ -136,6 +136,7 @@ know the result wtihin two hours"
     callback_id = "invitation_availability:#{plan.id}:#{user.id}"
     client.chat_postEphemeral(
       channel: channel_id,
+      user: user.slack_id,
       text: invitation_message,
       attachments: [
         {
@@ -170,6 +171,7 @@ know the result wtihin two hours"
     callback_id = "show_option:#{option_plan.id}:#{user.id}"
     client.chat_postEphemeral(
       channel: channel_id,
+      user: user.slack_id,
       text: 'How about doing this?',
       attachments: [
         {

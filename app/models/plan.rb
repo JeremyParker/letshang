@@ -36,7 +36,6 @@ class Plan < ApplicationRecord
   OPEN = 5      # Still working on it
   # TODO - make a status for "logically can't be agreed on. See `can_succeed`"
   def status
-    require 'pry'; binding.pry
     if succeeded
       SUCCEEDED
     elsif succeeded == false
