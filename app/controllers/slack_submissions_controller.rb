@@ -102,6 +102,8 @@ class SlackSubmissionsController < ApplicationController
 
         if payload['actions'][0]['value'] == 'yes'
           SlackSubmissionsHelper.new_option(plan, payload['trigger_id'])
+          json_response('', :ok)
+          return
         else
           # start a convo with all guests
           guests = plan.invitations.map(&:user)
@@ -118,32 +120,22 @@ class SlackSubmissionsController < ApplicationController
         invitation = Invitation.where(user: user_id, plan: plan_id).last
         if payload['actions'][0]['value'] == 'yes'
           invitation.update(available: true)
-          maybe_show_next_option(plan_id, user_id)
+          next_guest_step(plan_id, user_id)
         else
           invitation.update(available: false)
-          evaluate(Plan.find(plan_id))
-          json_response({text: "OK, maybe we'll see you next time."}, :created)
+          plan = Plan.find(plan_id)
+          evaluate(plan)
+          SlackSubmissionsHelper.show_goodbye(plan, user)
+          json_response('', :created)
         end
 
       # This is a response from when we showed a guest an option
       when /^show_option/ # show_option:#{option_plan.id}:#{user.id}
-        option_plan_id = payload['callback_id'].split(':')[1]
-        user_id = payload['callback_id'].split(':').last
+        handle_option_response(payload)
 
-        # TODO: plan_open_check - make sure their answer matters before recording it
-        # TODO: prevent them from answering multiple times to the same option_plan
-
-        # record the answer
-        Answer.create(
-          value: payload['actions'][0]['value'] == 'yes',
-          user_id: user_id,
-          option_plan_id: option_plan_id
-        )
-        option_plan = OptionPlan.find(option_plan_id)
-        shown = maybe_show_next_option(option_plan.plan.id, user_id)
-        if !shown && !evaluate(option_plan.plan)
-          json_response({text: "OK. Within two hours we'll let you know if you have plans, and what you're doing."}, :created)
-        end
+      # this is a response from a guest who either said 'no' to the winning option, or reponded late.
+      when /^show_single_option/ # show_single_option:#{option_plan.id}:#{user.id}
+        handle_option_response(payload, true)
 
       else
         json_response({text: "Uh oh! I don't know what callback that was for"}, :created)
@@ -156,9 +148,63 @@ class SlackSubmissionsController < ApplicationController
 
   private
 
+  # A guest has resopnded to one of the options. Depending on the state of the plan, this might be
+  # the only option they were offered.
+  def handle_option_response(payload, single_option = false)
+    option_plan_id = payload['callback_id'].split(':')[1]
+    user_id = payload['callback_id'].split(':').last
+    # TODO: prevent them from answering multiple times to the same option_plan
+    # record the answer
+    Answer.create(
+      value: payload['actions'][0]['value'] == 'yes',
+      user_id: user_id,
+      option_plan_id: option_plan_id,
+      single_option: single_option
+    )
+    option_plan = OptionPlan.find(option_plan_id)
+    next_guest_step(option_plan.plan_id, user_id)
+    json_response('', :created)
+  end
+
+  # Take the next step for this plan for this guest.
+  # Maybe show them another option.
+  # Maybe tell them the plan failed already
+  # Maybe tell them it'd been decided, and there's only one option now.
+  def next_guest_step(plan_id, user_id)
+    plan = Plan.find(plan_id)
+    user = User.find(user_id)
+
+    puts "**** plan status is #{plan.status}"
+    case plan.status
+    when Plan::SUCCEEDED
+      # check if this user has a single_option_answer
+      single_option_answer = user.answers.where(option_plan_id: plan.winning_option_plan_id, single_option: true).first
+      if single_option_answer
+        # If so, and it was 'yes', then let everyone know this person is joining them
+        if single_option_answer.value
+          already_attending = plan.attendees.reject { |a| a.id == user.id } + [plan.owner]
+          already_attending.each { |a| SlackSubmissionsHelper.send_new_attendee_notification(plan, a, user) }
+        else
+          # if they answered 'no', then say "see ya!"
+          SlackSubmissionsHelper.show_goodbye(plan, user)
+        end
+      else
+        # If guest hasn't answered a single_option, ask for one
+        SlackSubmissionsHelper.show_single_option(plan.winning_option_plan, user, plan.attendees + [plan.owner])
+      end
+    when Plan::FAILED, Plan::REJECTED, Plan::EXPIRED
+      SlackSubmissionsHelper.send_failure_result(plan, user)
+    when Plan::OPEN, Plan::AGREED
+      shown = maybe_show_next_option(plan.id, user_id)
+      if !shown && !evaluate(plan)
+        json_response({text: "OK. Within two hours we'll let you know if you have plans, and what you're doing."}, :created)
+      end
+    end
+  end
+
   def maybe_show_next_option(plan_id, user_id)
     opts = OptionPlan.available_option_plans(plan_id, user_id)
-    SlackSubmissionsHelper.show_option(opts.first, User.find(user_id)) if opts.present?
+    SlackSubmissionsHelper.show_option(opts.sample, User.find(user_id)) if opts.present?
     opts.present? # return true if we showed them another option
   end
 
@@ -170,8 +216,14 @@ class SlackSubmissionsController < ApplicationController
     when Plan::AGREED
       plan.choose_winning_option_plan
       # Don't tell people who haven't responded yet. Too much noise. Wait for them to respond, then tell 'em.
-      (plan.attendees << plan.owner).each { |user| SlackSubmissionsHelper.send_success_result(plan.winning_option_plan, user) }
+      attendees = plan.attendees << plan.owner
+      attendees.each { |user| SlackSubmissionsHelper.send_success_result(plan.winning_option_plan, user) }
       plan.update(succeeded: true)
+
+      # inform guests who are available, but either said no to the winning option, or haven't responded to it yet.
+      potential_extras = plan.invitations.where(available: true).map(&:user)
+      potential_extras.each { |u| SlackSubmissionsHelper.show_single_option(plan.winning_option_plan, u, attendees) }
+
       true
     when Plan::EXPIRED, Plan::REJECTED
       # Only tell people who said they were available. Too much noise otherwise. Wait for them to respond, then tell 'em.
@@ -187,7 +239,8 @@ class SlackSubmissionsController < ApplicationController
   # Check if the plan is still open. Call this on every response, so if someone is trying to
   # respond to a bunch of options at the moment that the plan is decided on, they don't have
   # to waste their time filling out the rest of the options.
-  def plan_open_check
-    true # TODO:
+  def plan_open?(plan)
+    plan.status == Plan::OPEN
   end
+
 end

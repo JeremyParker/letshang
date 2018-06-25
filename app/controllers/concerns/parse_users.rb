@@ -16,6 +16,7 @@ module ParseUsers
   end
 
   # returns a string of user names with commas between all except a penultimate "and".
+  # only works for arrays of length 2 or more.
   # @param user_names [array] - user names without the @ symbol
   def format_user_names(user_names)
     user_names[0..user_names.length - 2].map {|n| "<@#{n}>"}.join(', ') + " and <@#{user_names[user_names.length - 1]}>"

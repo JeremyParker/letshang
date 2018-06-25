@@ -1,3 +1,5 @@
+include ParseUsers
+
 module SlackSubmissionsHelper
   FALLBACK_MESSAGE = "Sorry, this bot isn't going to work on your system."
 
@@ -161,7 +163,7 @@ know the result wtihin two hours"
     response = client.conversations_open(return_im: true, users: user.slack_id)
     channel_id = response[:channel][:id]
     callback_id = "invitation_availability:#{plan.id}:#{user.id}"
-    client.chat_postEphemeral(
+    response = client.chat_postEphemeral(
       channel: channel_id,
       user: user.slack_id,
       text: invitation_message,
@@ -187,6 +189,20 @@ know the result wtihin two hours"
           ]
         }
       ]
+    )
+    puts "message sent to #{user.slack_id}. Response:\n" + response.to_s
+  end
+
+  # show a goodbye message
+  def self.show_goodbye(option_plan, user)
+    client = SlackHelper.set_up_client(user)
+    response = client.conversations_open(return_im: true, users: user.slack_id)
+    channel_id = response[:channel][:id]
+    callback_id = "show_option:#{option_plan.id}:#{user.id}"
+    client.chat_postEphemeral(
+      channel: channel_id,
+      user: user.slack_id,
+      text: "OK, :disappointed: maybe we'll see you next time."
     )
   end
 
@@ -225,6 +241,43 @@ know the result wtihin two hours"
     )
   end
 
+  # When a plan is already decided on, a late-responder or no-voter might want to join.
+  def self.show_single_option(option_plan, user, guests)
+    client = SlackHelper.set_up_client(user)
+    response = client.conversations_open(return_im: true, users: user.slack_id)
+    channel_id = response[:channel][:id]
+    callback_id = "show_single_option:#{option_plan.id}:#{user.id}"
+    client.chat_postEphemeral(
+      channel: channel_id,
+      user: user.slack_id,
+      text: "A decision has been made! :smile: You didn't say you wanted to do it, but it's not \
+too late to join the fun if you want. Would you like to join #{format_user_names(guests.map(&:slack_id))} \
+doing this:",
+      attachments: [
+        {
+          "callback_id": callback_id,
+          "text": option_plan.option.title,
+          "fallback": FALLBACK_MESSAGE,
+          "attachment_type": "default",
+          "actions": [
+            {
+              "name": "response",
+              "text": "No thanks",
+              "type": "button",
+              "value": "no"
+            },
+            {
+              "name": "response",
+              "text": "Yeah sure!",
+              "type": "button",
+              "value": "yes"
+            }
+          ]
+        }
+      ]
+    )
+  end
+
   # send the successful result to a user (guest or owner)
   def self.send_success_result(option_plan, user)
     client = SlackHelper.set_up_client(user)
@@ -253,6 +306,18 @@ know the result wtihin two hours"
     client.chat_postMessage(
       channel: channel_id,
       text: "Sorry, people couldn't agree on a plan for #{plan.formatted_rough_time}. The good news is you can try again!",
+    )
+  end
+
+  # notify a user (guest or owner) that a new guest is attending
+  def self.send_new_attendee_notification(plan, user, new_attendee)
+    client = SlackHelper.set_up_client(user)
+    response = client.conversations_open(return_im: true, users: user.slack_id)
+    channel_id = response[:channel][:id]
+    client.chat_postMessage(
+      channel: channel_id,
+      text: "Good news! <@#{new_attendee.slack_id}> has decided to join you #{plan.formatted_rough_time} \
+for your outing, #{plan.winning_option_plan.option.title}!"
     )
   end
 end

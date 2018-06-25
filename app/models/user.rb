@@ -14,7 +14,7 @@ class User < ApplicationRecord
 
   has_many :attendances
   has_many :plans, through: :attendances # plans the user ends up attending
-  has_many :responses
+  has_many :answers
 
   def self.maybe_create(slack_user_id, slack_user_name, team)
     user = self.where(slack_id: slack_user_id).order(:updated_at).last

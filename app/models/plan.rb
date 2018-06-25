@@ -34,7 +34,6 @@ class Plan < ApplicationRecord
   EXPIRED = 3   # Expiration has passed, but haven't notified yet
   REJECTED = 4  # Too many people said no/unavailable, but haven't notified yet
   OPEN = 5      # Still working on it
-  # TODO - make a status for "logically can't be agreed on. See `can_succeed`"
   def status
     if succeeded
       SUCCEEDED
@@ -42,7 +41,7 @@ class Plan < ApplicationRecord
       FAILED
     elsif agreed_option_plans.present?
       AGREED
-    elsif !can_succeed
+    elsif !can_succeed?
       REJECTED
     elsif expired?
       EXPIRED
@@ -67,14 +66,14 @@ class Plan < ApplicationRecord
   end
 
   # is there any way this plan could succeed? I.e. have too many people said 'no'.
-  def can_succeed
+  def can_succeed?
     unavailable_count = invitations.where(:available => false).count
     option_plans.any? do |option_plan|
       invitations.count - (unavailable_count + option_plan.not_interested_count) >= minimum_attendee_count
     end
   end
 
-  # who has responded 'yes' to the winning option_plan
+  # who has responded 'yes' to the winning option_plan (NOTE: doesn't include Owner)
   def attendees
     # NOTE: late responders who tag along will have a 'yes' response added for the winning option_plan
     if winning_option_plan
