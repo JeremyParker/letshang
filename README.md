@@ -37,10 +37,7 @@ Usage hint should be `Just type /letshang and let the bot guide you through the 
 
 Select `OAth & Permissions` from the left hand nav bar.
 Make sure the Redirect URLs include <server_address>/auth_redirects.
-I don't know if we need to make sure local environment variables SLACK_OAUTH_ACCESS_TOKEN, and 
-SLACK_BOT_USER_TOKEN are set to the Slack `OAuth Access Token` and `Bot User OAuth Access Token` 
-respectively. These values were set up when setting up the App in Slack, and should be visible
-on this web page. TODO: finalize what scopes we need.
+TODO: finalize what scopes we need.
 
 Select `Bot Users` from the left hand nav bar
 There should be a bot user whose `Display Name` is Let'sHang and whose default username is letshang.
