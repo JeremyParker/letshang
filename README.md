@@ -10,7 +10,7 @@ Run the server software somewhere and expose it at a particular address. That ad
 
 * Set Up The App And Environment Variables:
 Go to https://api.slack.com/apps and choose the `Let'sHang` app (or create it if needed)
-For me that's https://api.slack.com/apps/A9KSX926M
+For me that's https://api.slack.com/apps/A9KSX926M for dev, and https://api.slack.com/apps/ABDL47QDN in the PP workspace for prod.
 
 Go to the Basic Information option from the left hand nav bar.
 Installed components are
