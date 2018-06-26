@@ -156,7 +156,7 @@ module SlackSubmissionsHelper
 
   # send an invitation to a user to start their "receiver experience".
   def self.invitation(plan, user, trigger_id)
-    invitation_message = "Hi #{user.slack_user_name}! #{plan.owner.slack_user_name} wants to \
+    invitation_message = "Hi #{user.slack_user_name}! <@#{plan.owner.slack_id}> wants to \
 get a group of people together to do something #{plan.formatted_rough_time}. As long as at least \
 #{plan.minimum_attendee_count + 1} people can agree on something to do, we'll do it. You'll \
 know the result within two hours."
@@ -238,14 +238,14 @@ doing this:",
   end
 
   # send the successful result to a user (guest or owner)
-  def self.send_success_result(option_plan, user)
+  def self.send_success_result(option_plan, user, guests)
     client = SlackHelper.set_up_client(user)
     response = client.conversations_open(return_im: true, users: user.slack_id)
     channel_id = response[:channel][:id]
     # chat_postMessage not chat_postEphemeral, so it sticks around for later reference.
     client.chat_postMessage(
       channel: channel_id,
-      text: 'Congrats! You have plans!',
+      text: "Congrats! You have plans! #{format_user_names(guests.map(&:slack_id))} are going to join you to do this:",
       attachments: format_option_attachments(option_plan, nil)
     )
   end
@@ -276,8 +276,7 @@ for your outing, #{plan.winning_option_plan.option.title}!"
 private
 
   def self.format_option_attachments(option_plan, callback_id)
-  [
-    {
+    result = {
       "callback_id": callback_id,
       "color": "#36a64f",
       "title": option_plan.option.title,
@@ -289,7 +288,12 @@ private
           "short": false
         }
       ],
-      "actions": [
+      "fallback": FALLBACK_MESSAGE,
+      "attachment_type": "default"
+    }
+
+    if callback_id
+      result.merge!("actions": [
         {
           "name": "response",
           "text": "No thanks",
@@ -302,11 +306,9 @@ private
           "type": "button",
           "value": "yes"
         }
-      ],
-      "fallback": FALLBACK_MESSAGE,
-      "attachment_type": "default"
-    }
-  ]
+      ])
+    end
+    [result]
   end
 
 end

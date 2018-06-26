@@ -122,7 +122,7 @@ class SlackSubmissionsController < ApplicationController
         user = User.find(user_id)
         if payload['actions'][0]['value'] == 'yes'
           invitation.update(available: true)
-          if plan.status == Plan.SUCCEEDED
+          if plan.status == Plan::SUCCEEDED
             # if the plan is already decided on, just ask about the one winning option
             SlackSubmissionsHelper.show_single_option(plan.winning_option_plan, user, plan.attendees + [plan.owner])
           else
@@ -198,16 +198,16 @@ class SlackSubmissionsController < ApplicationController
     when Plan::FAILED, Plan::REJECTED, Plan::EXPIRED
       SlackSubmissionsHelper.send_failure_result(plan, user)
     when Plan::OPEN, Plan::AGREED
-      shown = maybe_show_next_option(plan.id, user_id)
+      shown = maybe_show_next_option(plan, user)
       if !shown && !evaluate(plan)
         json_response({text: "OK. Within two hours we'll let you know if you have plans, and what you're doing."}, :created)
       end
     end
   end
 
-  def maybe_show_next_option(plan_id, user_id)
-    opts = OptionPlan.available_option_plans(plan_id, user_id)
-    SlackSubmissionsHelper.show_option(opts.sample, User.find(user_id)) if opts.present?
+  def maybe_show_next_option(plan, user)
+    opts = OptionPlan.available_option_plans(plan.id, user.id)
+    SlackSubmissionsHelper.show_option(opts.sample, user) if opts.present?
     opts.present? # return true if we showed them another option
   end
 
@@ -220,7 +220,10 @@ class SlackSubmissionsController < ApplicationController
       plan.choose_winning_option_plan
       # Don't tell people who haven't responded yet. Too much noise. Wait for them to respond, then tell 'em.
       attendees = plan.attendees << plan.owner
-      attendees.each { |user| SlackSubmissionsHelper.send_success_result(plan.winning_option_plan, user) }
+      attendees.each do |user|
+        guests = attendees.reject { |a| a == user }
+        SlackSubmissionsHelper.send_success_result(plan.winning_option_plan, user, guests)
+      end
       plan.update(succeeded: true)
 
       # inform guests who are available, but either said no to the winning option, or haven't responded to it yet.
