@@ -65,7 +65,8 @@ module SlackSubmissionsHelper
             "optional": true,
             "hint": "More information about this activity, maybe a URL with details... whatever.",
             "placeholder": "More details if necessary",
-            "name": "option_description"
+            "name": "option_description",
+            "max_length": 400
           },
           {
             "type": "text",
@@ -158,7 +159,7 @@ module SlackSubmissionsHelper
     invitation_message = "Hi #{user.slack_user_name}! #{plan.owner.slack_user_name} wants to \
 get a group of people together to do something #{plan.formatted_rough_time}. As long as at least \
 #{plan.minimum_attendee_count + 1} people can agree on something to do, we'll do it. You'll \
-know the result wtihin two hours"
+know the result within two hours."
     client = SlackHelper.set_up_client(plan.owner)
     response = client.conversations_open(return_im: true, users: user.slack_id)
     channel_id = response[:channel][:id]
@@ -216,28 +217,7 @@ know the result wtihin two hours"
       channel: channel_id,
       user: user.slack_id,
       text: 'How about doing this?',
-      attachments: [
-        {
-          "callback_id": callback_id,
-          "text": option_plan.option.title,
-          "fallback": FALLBACK_MESSAGE,
-          "attachment_type": "default",
-          "actions": [
-            {
-              "name": "response",
-              "text": "No thanks",
-              "type": "button",
-              "value": "no"
-            },
-            {
-              "name": "response",
-              "text": "I'd do that",
-              "type": "button",
-              "value": "yes"
-            }
-          ]
-        }
-      ]
+      attachments: self.format_option_attachments(option_plan, callback_id)
     )
   end
 
@@ -253,28 +233,7 @@ know the result wtihin two hours"
       text: "A decision has been made! :smile: You didn't say you wanted to do it, but it's not \
 too late to join the fun if you want. Would you like to join #{format_user_names(guests.map(&:slack_id))} \
 doing this:",
-      attachments: [
-        {
-          "callback_id": callback_id,
-          "text": option_plan.option.title,
-          "fallback": FALLBACK_MESSAGE,
-          "attachment_type": "default",
-          "actions": [
-            {
-              "name": "response",
-              "text": "No thanks",
-              "type": "button",
-              "value": "no"
-            },
-            {
-              "name": "response",
-              "text": "Yeah sure!",
-              "type": "button",
-              "value": "yes"
-            }
-          ]
-        }
-      ]
+      attachments: self.format_option_attachments(option_plan, callback_id)
     )
   end
 
@@ -287,14 +246,7 @@ doing this:",
     client.chat_postMessage(
       channel: channel_id,
       text: 'Congrats! You have plans!',
-      attachments: [
-        {
-          "callback_id": '', # no need for a callback ID. They can't do anything.
-          "text": option_plan.option.title,
-          "fallback": FALLBACK_MESSAGE,
-          "attachment_type": "default",
-        }
-      ]
+      attachments: format_option_attachments(option_plan, nil)
     )
   end
 
@@ -320,4 +272,41 @@ doing this:",
 for your outing, #{plan.winning_option_plan.option.title}!"
     )
   end
+
+private
+
+  def self.format_option_attachments(option_plan, callback_id)
+  [
+    {
+      "callback_id": callback_id,
+      "color": "#36a64f",
+      "title": option_plan.option.title,
+      "text": option_plan.option.description,
+      "fields": [
+        {
+          "title": "Meet At",
+          "value": "#{option_plan.option.meeting_address}, #{option_plan.option.meeting_time}",
+          "short": false
+        }
+      ],
+      "actions": [
+        {
+          "name": "response",
+          "text": "No thanks",
+          "type": "button",
+          "value": "no"
+        },
+        {
+          "name": "response",
+          "text": "I'd do that",
+          "type": "button",
+          "value": "yes"
+        }
+      ],
+      "fallback": FALLBACK_MESSAGE,
+      "attachment_type": "default"
+    }
+  ]
+  end
+
 end
