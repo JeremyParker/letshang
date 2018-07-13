@@ -50,6 +50,38 @@ class Plan < ApplicationRecord
     end
   end
 
+  # check the state of the plan and take appropriate action
+  # This can be called from a cron job
+  # @Return true if some action happened - like we sent out messages to folks, or something
+  def evaluate
+    case status
+    when AGREED
+      choose_winning_option_plan
+      # Don't tell people who haven't responded yet. Too much noise. Wait for them to respond, then tell 'em.
+      all_attendees = attendees << owner
+      all_attendees.each do |user|
+        guests = all_attendees.reject { |a| a == user }
+        SlackSubmissionsHelper.send_success_result(winning_option_plan, user, guests)
+      end
+      update(succeeded: true)
+
+      # inform guests who are available, but either said no to the winning option, or haven't responded to it yet.
+      potential_extras = invitations.where(available: true).map(&:user).reject { |u| all_attendees.include?(u) }
+      potential_extras.each { |u| SlackSubmissionsHelper.show_single_option(winning_option_plan, u, all_attendees) }
+      true
+
+    when EXPIRED, REJECTED
+      # Only tell people who said they were available. Too much noise otherwise. Wait for them to respond, then tell 'em.
+      waiting_guests = invitations.where(available: true).map(&:user).uniq
+      (waiting_guests << owner).each { |user| SlackSubmissionsHelper.send_failure_result(self, user) }
+      update(succeeded: false)
+      true
+
+    when SUCCEEDED, FAILED, OPEN
+      false
+    end
+  end
+
   def choose_winning_option_plan
     # TODO: better winner selection logic than random
     self.update(winning_option_plan: agreed_option_plans.sample)

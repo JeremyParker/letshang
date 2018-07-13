@@ -130,7 +130,7 @@ class SlackSubmissionsController < ApplicationController
           end
         else
           invitation.update(available: false)
-          evaluate(plan)
+          plan.evaluate
           SlackSubmissionsHelper.show_goodbye(plan, user)
         end
         json_response('', :created)
@@ -199,7 +199,7 @@ class SlackSubmissionsController < ApplicationController
       SlackSubmissionsHelper.send_failure_result(plan, user)
     when Plan::OPEN, Plan::AGREED
       shown = maybe_show_next_option(plan, user)
-      if !shown && !evaluate(plan)
+      if !shown && !plan.evaluate
         json_response({text: "OK. Within two hours we'll let you know if you have plans, and what you're doing."}, :created)
       end
     end
@@ -209,38 +209,6 @@ class SlackSubmissionsController < ApplicationController
     opts = OptionPlan.available_option_plans(plan.id, user.id)
     SlackSubmissionsHelper.show_option(opts.sample, user) if opts.present?
     opts.present? # return true if we showed them another option
-  end
-
-  # check the state of the plan and take appropriate action
-  # This can be called from a cron job
-  # @Return true if some action happened - like we sent out messages to folks, or something
-  def evaluate(plan)
-    case plan.status
-    when Plan::AGREED
-      plan.choose_winning_option_plan
-      # Don't tell people who haven't responded yet. Too much noise. Wait for them to respond, then tell 'em.
-      attendees = plan.attendees << plan.owner
-      attendees.each do |user|
-        guests = attendees.reject { |a| a == user }
-        SlackSubmissionsHelper.send_success_result(plan.winning_option_plan, user, guests)
-      end
-      plan.update(succeeded: true)
-
-      # inform guests who are available, but either said no to the winning option, or haven't responded to it yet.
-      potential_extras = plan.invitations.where(available: true).map(&:user).reject { |u| attendees.include?(u) }
-      potential_extras.each { |u| SlackSubmissionsHelper.show_single_option(plan.winning_option_plan, u, attendees) }
-      true
-
-    when Plan::EXPIRED, Plan::REJECTED
-      # Only tell people who said they were available. Too much noise otherwise. Wait for them to respond, then tell 'em.
-      waiting_guests = Invitation.where(plan: plan).where(available: true).map(&:user).uniq
-      (waiting_guests << plan.owner).each { |user| SlackSubmissionsHelper.send_failure_result(plan, user) }
-      plan.update(succeeded: false)
-      true
-
-    when Plan::SUCCEEDED, Plan::FAILED, Plan::OPEN
-      false
-    end
   end
 
   # Check if the plan is still open. Call this on every response, so if someone is trying to
