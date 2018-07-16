@@ -7,6 +7,7 @@ That public address will be the <server_address> in configurations below.
 
 * **Setting up public server**
 Run the server software somewhere and expose it at a particular address. That address will be <server_address> below.
+Also, set up a cron job (Scheduler task on Heroku) that runs `rake evaluate_plans` every 10 minutes.
 
 * **Set Up The App And Environment Variables:**
 Go to https://api.slack.com/apps and choose the `Let'sHang` app (or create it if needed)
