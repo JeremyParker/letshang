@@ -6,18 +6,20 @@ For local development tunnel internet traffic to your local box by running `ngro
 This will tell you what public address is being tunneled to your local machine. For example, `https://77f55955.ngrok.io`.
 That public address will be the <server_address> in configurations below.
 
-Get the .envrc file, which defines the following:
-- SLACK_CLIENT_ID
-- SLACK_CLIENT_SECRET
-- SLACK_VERIFICATION_TOKEN
-- SLACK_OAUTH_ACCESS_TOKEN
-- SLACK_BOT_USER_TOKEN
+Get the .envrc file, which defines the following environment variables:
+```
+SLACK_CLIENT_ID
+SLACK_CLIENT_SECRET
+SLACK_VERIFICATION_TOKEN
+SLACK_OAUTH_ACCESS_TOKEN
+SLACK_BOT_USER_TOKEN
+```
 
-Make sure `direnv` is installed. It will execute that file when you switch to that directory. This is how all those environment variables get set in your local shell.
-Make sure `docker` and `docker-compose` are installed.
-Run `docker-compose build`
-Run `docker-compose up`
-The environment variables listed in the `docker-compose.yml` file are copied from your local shell to the docker environment.
+* Make sure `direnv` is installed. It will execute that file when you switch to that directory. This is how all those environment variables get set in your local shell.
+* Make sure `docker` and `docker-compose` are installed.
+* Run `docker-compose build`
+* Run `docker-compose up`
+* The environment variables listed in the `docker-compose.yml` file are copied from your local shell to the docker environment.
 
 To debug
 - put a `require'pry'; binding.pry` statement in the code
