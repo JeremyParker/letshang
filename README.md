@@ -1,15 +1,41 @@
 # LETSHANG
 
-* **Local development**
+## Local development
+
 For local development tunnel internet traffic to your local box by running `ngrok http 3000`
 This will tell you what public address is being tunneled to your local machine. For example, `https://77f55955.ngrok.io`.
 That public address will be the <server_address> in configurations below.
 
-* **Setting up public server**
+Get the .envrc file, which defines the following environment variables:
+```
+SLACK_CLIENT_ID
+SLACK_CLIENT_SECRET
+SLACK_VERIFICATION_TOKEN
+SLACK_OAUTH_ACCESS_TOKEN
+SLACK_BOT_USER_TOKEN
+```
+
+* Make sure `direnv` is installed. It will execute that file when you switch to that directory. This is how all those environment variables get set in your local shell.
+* Make sure `docker` and `docker-compose` are installed.
+* Run `docker-compose build`
+* Run `docker-compose up`
+* The environment variables listed in the `docker-compose.yml` file are copied from your local shell to the docker environment.
+
+To debug
+- put a `require'pry'; binding.pry` statement in the code
+- run `docker ps` in a local shell
+- note the process number of the web service, and run `docker attach 75cde1ab8133` with the web service pid.
+- when the breakpoint is hit, you should be in an interactive session
+- when you're done debugging run `exit` to continue execution
+- to dettach hit `ctrl-p` + `ctrl-q`.
+
+## Setting up public server
+
 Run the server software somewhere and expose it at a particular address. That address will be <server_address> below.
 Also, set up a cron job (Scheduler task on Heroku) that runs `rake evaluate_plans` every 10 minutes.
 
-* **Set Up The App And Environment Variables:**
+**Set Up The App And Environment Variables:**
+
 Go to https://api.slack.com/apps and choose the `Let'sHang` app (or create it if needed)
 For me that's https://api.slack.com/apps/A9KSX926M for dev, and https://api.slack.com/apps/ABDL47QDN in the PP workspace for prod.
 
