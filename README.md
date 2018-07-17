@@ -5,6 +5,26 @@ For local development tunnel internet traffic to your local box by running `ngro
 This will tell you what public address is being tunneled to your local machine. For example, `https://77f55955.ngrok.io`.
 That public address will be the <server_address> in configurations below.
 
+Get the .letshangrc file, which defines the following:
+	- SLACK_CLIENT_ID
+	- SLACK_CLIENT_SECRET
+	- SLACK_VERIFICATION_TOKEN
+	- SLACK_OAUTH_ACCESS_TOKEN
+	- SLACK_BOT_USER_TOKEN
+
+I'm using direnv to execute that file, and set all those environment variables in my local shell.
+Make sure `docker` and `docker-compose` are installed.
+Run `docker-compose build`
+Run `docker-compose up`
+
+To debug
+- put a `require'pry'; binding.pry` statement in the code
+- run `docker ps` in a local shell
+- note the process number of the web service, and run `docker attach 75cde1ab8133` with the web service pid.
+- when the breakpoint is hit, you should be in an interactive session
+- when you're done debugging run `exit` to continue execution
+- to dettach hit `ctrl-p` + `ctrl-q`.
+
 * **Setting up public server**
 Run the server software somewhere and expose it at a particular address. That address will be <server_address> below.
 

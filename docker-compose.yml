@@ -8,8 +8,17 @@ services:
     build: .
     volumes:
       - .:/var/opt/app/letshang
+    environment:
+      - SLACK_CLIENT_ID
+      - SLACK_CLIENT_SECRET
+      - SLACK_VERIFICATION_TOKEN
+      - SLACK_OAUTH_ACCESS_TOKEN
+      - SLACK_BOT_USER_TOKEN
     command: rails server
     ports:
       - "3000:3000"
     depends_on:
       - db
+    # allow attaching to shell for binding.pry debugging
+    tty: true
+    stdin_open: true
