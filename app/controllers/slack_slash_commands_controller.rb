@@ -34,12 +34,12 @@ class SlackSlashCommandsController < ApplicationController
       team = Team.where(team_id: params[:team_id]).order(:updated_at).last
       # get an array of [id, name] pairs
       user_id_name_array = parse_user_ids(params[:text]).zip(parse_user_names(params[:text])).uniq{ |u| u[0] }
-      invited_users = user_id_name_array.map { |user_id_name| User.maybe_create(user_id_name[0], user_id_name[1], team) }
+      guests = user_id_name_array.map { |user_id_name| User.maybe_create(user_id_name[0], user_id_name[1], team) }
 
       initiating_user = User.maybe_create(params[:user_id], params[:user_name], team)
       users_info = SlackHelper.user_info(initiating_user)
-      plan = Plan.start_plan(initiating_user, invited_users, users_info[:tz])
-      SlackSlashCommandsHelper.plan_size_dialog(plan, params[:trigger_id])
+      plan = Plan.start_plan(initiating_user, guests, users_info[:tz])
+      SlackSlashCommandsHelper.plan_size_message(plan, guests, params[:channel_id])
 
     when /help$/i # the string 'help' (case insensitive)
       json_response(SlackSlashCommandsHelper.help(), :created)

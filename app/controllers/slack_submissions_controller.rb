@@ -23,17 +23,8 @@ class SlackSubmissionsController < ApplicationController
     return json_response('', :forbidden) unless valid_slack_token? payload['token']
 
     case payload['type']
-
     when 'dialog_submission'
       case payload['callback_id']
-
-      when /^set_plan_size/
-        minimum_attendee_count = payload['submission']['plan_size'].to_i # TODO - error handling, bounds checking
-        plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
-        plan.update(minimum_attendee_count: minimum_attendee_count) # TODO - move this to plan.rb
-        SlackSubmissionsHelper.rough_time_message(plan, payload['channel']['id'])
-        json_response('', :ok)
-
       when /^save_plan_option/
         plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
         title = payload['submission']['option_title']
@@ -50,7 +41,6 @@ class SlackSubmissionsController < ApplicationController
         SlackSubmissionsHelper.option_saved_message(plan, payload['channel']['id'])
         json_response('', :ok)
     end
-
 
     # An interactive message expects the payload to look like
     # {
@@ -70,6 +60,13 @@ class SlackSubmissionsController < ApplicationController
     # }
     when 'interactive_message'
       case payload['callback_id']
+       when /^plan_size/
+        plan = Plan.includes(:owner).find(payload['callback_id'].split(':').last)
+        input = payload['actions'][0]['selected_options'][0]['value'].to_i
+        plan.update(minimum_attendee_count: input) # TODO - move this to plan.rb
+        SlackSubmissionsHelper.rough_time_message(plan, payload['channel']['id'])
+        json_response('', :ok)
+
       when /^plan_time/
         plan = Plan.find(payload['callback_id'].split(':').last)
         input = payload['actions'][0]['selected_options'][0]['value']
@@ -111,7 +108,7 @@ class SlackSubmissionsController < ApplicationController
           plan.update(expiration: timezone.now + Plan::HOURS*06*60) # start the timer on when this Plan expires
 
           guest_names_string = format_user_names(guests.map(&:slack_id))
-          json_response({text: "OK. A personalized invitation has been sent to " + guest_names_string}, :created)
+          json_response({text: "OK. A personalized invitation has been sent to #{guest_names_string}. I'll let you know the results within two hours!" }, :created)
         end
 
       when /^invitation_availability/ # callback_id looks like "invitation_availability:<plan_id>:<user_id>"

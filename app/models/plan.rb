@@ -16,7 +16,7 @@ class Plan < ApplicationRecord
 
   HOURS = 2 # How long do the users have before the plan expires?
 
-  # create a plan record and add invitation records for these users
+  # This is the very beginning of the planning process.
   # @param owner - User object
   # @param invited_users - Array of User objects for who's invited
   # @timezone_name - String with the name of the timezone for this plan

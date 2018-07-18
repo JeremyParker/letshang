@@ -26,30 +26,28 @@ The more people you invite, the more likely you'll have a plan!"
     { text: "If you only want to invite one other person, you don't need my help. Just DM them!"}
   end
 
-  # Ask the plan owner for the minimum attendee count
-  def self.plan_size_dialog(plan, trigger_id)
+  # ask the owner what size group they'd be happy with
+  def self.plan_size_message(plan, guests, channel_id)
     client = SlackHelper.set_up_client(plan.owner)
-    client.dialog_open(
-      trigger_id: trigger_id,
-      dialog: {
-        "callback_id": "set_plan_size:#{plan.id}",
-        "title": "How many people?",
-        "submit_label": "OK",
-        "elements": [
-          # TODO: Better intro message, like "Great. We'll start planning an event with @tester, @keely and @flavri."
-          {
-            "type": "text",
-            "subtype": "number",
-            "label": "At least how many?",
-            "hint": "What's the smallest number of these people you'd want to get together with? (Enter a number between 1 and #{plan.invitations.count})",
-            "placeholder": "Enter a number",
-            "name": "plan_size",
-            "min_length": 1,
-            "max_length": 3
-          }
-        ]
-      }
+    options = (1..plan.invitations.count).map { |n| { "text": n.to_s, "value": n } }
+    client.chat_postEphemeral(
+      channel: channel_id,
+      user: plan.owner.slack_id,
+      text: "OK great. We'll check with #{format_user_names(guests.map(&:slack_id))} and see who's around.",
+      attachments: [
+        {
+          "callback_id": "plan_size:#{plan.id}",
+          "text": "What's the smallest group of these people you'd want to get together with?",
+          "actions": [
+            {
+              "name": "plan_size",
+              "text": "Pick one",
+              "type": "select",
+              "options": options
+            }
+          ]
+        }
+      ]
     )
   end
-
 end
