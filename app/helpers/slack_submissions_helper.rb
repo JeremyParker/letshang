@@ -177,15 +177,15 @@ know the result within two hours."
           "actions": [
             {
               "name": "response",
-              "text": "Not this time :disappointed:",
-              "type": "button",
-              "value": "no"
-            },
-            {
-              "name": "response",
               "text": "Maybe - what are the options?",
               "type": "button",
               "value": "yes"
+            },
+            {
+              "name": "response",
+              "text": "Not this time :disappointed:",
+              "type": "button",
+              "value": "no"
             }
           ]
         }
