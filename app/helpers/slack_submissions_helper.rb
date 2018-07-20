@@ -296,15 +296,15 @@ private
       result.merge!("actions": [
         {
           "name": "response",
-          "text": "No thanks",
-          "type": "button",
-          "value": "no"
-        },
-        {
-          "name": "response",
           "text": "I'd do that",
           "type": "button",
           "value": "yes"
+        },
+        {
+          "name": "response",
+          "text": "No thanks",
+          "type": "button",
+          "value": "no"
         }
       ])
     end
