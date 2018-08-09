@@ -5,10 +5,7 @@ module SlackSubmissionsHelper
 
   # ask the user about what time they want to do this
   def self.rough_time_message(plan, channel_id)
-    client = SlackHelper.set_up_client(plan.owner)
-    client.chat_postEphemeral(
-      channel: channel_id,
-      user: plan.owner.slack_id,
+    {
       text: "",
       attachments: [
         {
@@ -37,11 +34,11 @@ module SlackSubmissionsHelper
           ]
         }
       ]
-    )
+    }
   end
 
   # Ask the plan owner to enter an activity option
-  def self.new_option(plan, trigger_id)
+  def self.new_option_dialog(plan, trigger_id)
     client = SlackHelper.set_up_client(plan.owner)
     client.dialog_open(
       trigger_id: trigger_id,
@@ -95,7 +92,7 @@ module SlackSubmissionsHelper
   # tell the user their option was saved, and ask if they want to add another.
   def self.option_saved_message(plan, channel_id)
     callback_id = "option_new:#{plan.id}"
-    if plan.options.count >= 8
+    if plan.options.count > 6
       attachments = [
         {
           "callback_id": callback_id,
@@ -121,6 +118,12 @@ module SlackSubmissionsHelper
           "actions": [
             {
               "name": "response",
+              "text": "Yes, Add Another",
+              "type": "button",
+              "value": "yes"
+            },
+            {
+              "name": "response",
               "text": "No, That's Enough",
               "type": "button",
               "value": "no",
@@ -130,12 +133,6 @@ module SlackSubmissionsHelper
                 "dismiss_text": "Keep Adding Options",
                 "ok_text": "That's Enough"
               }
-            },
-            {
-              "name": "response",
-              "text": "Yes, Add Another",
-              "type": "button",
-              "value": "yes"
             }
           ]
         }

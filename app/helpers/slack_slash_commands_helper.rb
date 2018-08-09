@@ -1,8 +1,6 @@
 module SlackSlashCommandsHelper
 
-INTRO = "Hi, I'm *Let's Hang*.
-For info on how all this works, type `/letshang help`
-To start planning an outing, tag your friends in a command like `/letshang @amanda @mike @taylor @susan`"
+INTRO = "Hi, I'm *Let's Hang*. For info on how all this works, type `/letshang help`"
 
 HELP_MESSAGE = "I’m here to help you get together with a group of friends on short notice. Here's how it works:
 Tell me who to invite. Tell me how many of them you want to gather in order for it to be a fun outing. And tell \
@@ -10,8 +8,7 @@ me when you want to get together. Then I'll help you put together a list of fun 
 want to do. I’ll find out who's free and what they're up for doing. If I can get enough people to agree on something \
 to do within 2 hours, then *BOOM* your plans are made! I'll let everyone know what you're doing. If not, I'll let you \
 know you still don't have plans.
-To get started type `/letshang` followed by a list of your friends. For example ```/letshang @flavri @keely @marc @johannes \
-@akbar @cwh91 @dorothea @sonia @rmb```
+To get started type `/letshang` followed by a list of your friends. For example ```/letshang @amanda @mike @taylor @susan```
 The more people you invite, the more likely you'll have a plan!"
 
   def self.intro
