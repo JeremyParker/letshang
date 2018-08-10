@@ -155,7 +155,7 @@ module SlackSubmissionsHelper
   def self.invitation(plan, user, trigger_id)
     invitation_message = "Hi #{user.slack_user_name}! <@#{plan.owner.slack_id}> wants to \
 get a group of people together to do something #{plan.formatted_rough_time}. As long as at least \
-#{plan.minimum_attendee_count + 1} people can agree on something to do, we'll do it. You'll \
+#{plan.minimum_attendee_count + 1} of us can agree on something to do, we'll do it. You'll \
 know the result within two hours."
     client = SlackHelper.set_up_client(plan.owner)
     response = client.conversations_open(return_im: true, users: user.slack_id)
@@ -193,45 +193,29 @@ know the result within two hours."
 
   # show a goodbye message
   def self.show_goodbye(option_plan, user)
-    client = SlackHelper.set_up_client(user)
-    response = client.conversations_open(return_im: true, users: user.slack_id)
-    channel_id = response[:channel][:id]
-    callback_id = "show_option:#{option_plan.id}:#{user.id}"
-    client.chat_postEphemeral(
-      channel: channel_id,
-      user: user.slack_id,
+    {
       text: "OK, :disappointed: maybe we'll see you next time."
-    )
+    }
   end
 
   # show one of the event options to a guest
   def self.show_option(option_plan, user)
-    client = SlackHelper.set_up_client(user)
-    response = client.conversations_open(return_im: true, users: user.slack_id)
-    channel_id = response[:channel][:id]
     callback_id = "show_option:#{option_plan.id}:#{user.id}"
-    client.chat_postEphemeral(
-      channel: channel_id,
-      user: user.slack_id,
+    {
       text: 'How about doing this?',
       attachments: self.format_option_attachments(option_plan, callback_id)
-    )
+    }
   end
 
   # When a plan is already decided on, a late-responder or no-voter might want to join.
   def self.show_single_option(option_plan, user, guests)
-    client = SlackHelper.set_up_client(user)
-    response = client.conversations_open(return_im: true, users: user.slack_id)
-    channel_id = response[:channel][:id]
     callback_id = "show_single_option:#{option_plan.id}:#{user.id}"
-    client.chat_postEphemeral(
-      channel: channel_id,
-      user: user.slack_id,
-      text: "A decision has been made! :smile: You didn't say you wanted to do it, but it's not \
-too late to join the fun if you want. Would you like to join #{format_user_names(guests.map(&:slack_id))} \
+    {
+      text: "A decision has been made! :smile: You haven't said you wanted to do it, but it's not \
+too late to join the fun. Would you like to join #{format_user_names(guests.map(&:slack_id))} \
 doing this:",
       attachments: self.format_option_attachments(option_plan, callback_id)
-    )
+    }
   end
 
   # send the successful result to a user (guest or owner)
@@ -272,7 +256,7 @@ for your outing, #{plan.winning_option_plan.option.title}!"
 
 private
 
-  def self.format_option_attachments(option_plan, callback_id)
+  def self.format_option_attachments(option_plan, callback_id = nil)
     result = {
       "callback_id": callback_id,
       "color": "#36a64f",

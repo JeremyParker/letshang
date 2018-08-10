@@ -5,6 +5,11 @@ include ParseUsers
 class SlackSubmissionsController < ApplicationController
   protect_from_forgery :except => [:create] # we check the token 'manually' with `valid_slack_token`
 
+  EPHEMERAL_RESPONSE = {
+    response_type: "ephemeral",
+    replace_original: true
+  }
+
   # POST /slack_submission
   # This method expects a payload from Slack like this:
   # {
@@ -65,7 +70,7 @@ class SlackSubmissionsController < ApplicationController
         input = payload['actions'][0]['selected_options'][0]['value'].to_i
         plan.update(minimum_attendee_count: input) # TODO - move this to plan.rb
         response = SlackSubmissionsHelper.rough_time_message(plan, payload['channel']['id'])
-        json_response(response.merge({response_type: "ephemeral", replace_original: true}), :ok)
+        json_response(EPHEMERAL_RESPONSE.merge(response), :ok)
 
       when /^plan_time/
         plan = Plan.find(payload['callback_id'].split(':').last)
@@ -78,23 +83,18 @@ class SlackSubmissionsController < ApplicationController
         when 'tomorrow'
           timezone.tomorrow
         else
-          json_response({
-            text: "What? You plan too far in advance. Try being more spontaneous! Come back closer to when you want to go out.",
-            response_type: "ephemeral",
-            replace_original: true
-          }, :created)
-          return
+          return json_response(EPHEMERAL_RESPONSE.merge({
+            text: "What? You plan too far in advance. Try being more spontaneous! Come back closer to when you want to go out."
+          }), :created)
         end
         plan.update(rough_time: date)
 
         # ask the user to suggest an activity option
         SlackSubmissionsHelper.new_option_dialog(plan, payload['trigger_id'])
 
-        json_response({
-          text: "_", # annoyingly we can't delete the previous message
-          response_type: "ephemeral",
-          replace_original: true,
-        }, :created)
+        json_response(EPHEMERAL_RESPONSE.merge({
+          text: "_" # annoyingly we can't delete the previous message
+        }), :created)
 
       # This is a response from the OptionNew "form" that we showed the Owner
       when /^option_new/
@@ -102,26 +102,19 @@ class SlackSubmissionsController < ApplicationController
         timezone = ActiveSupport::TimeZone.new(plan.timezone)
         Time.zone = timezone
         if timezone.today > plan.rough_time
-          json_response({text: "Woah there! The time of the gathering you're trying to organize is past!"}, :created)
+          response = { text: "Woah there! The time of the gathering you're trying to organize is past!" }
         elsif payload['actions'][0]['value'] == 'yes'
           SlackSubmissionsHelper.new_option_dialog(plan, payload['trigger_id'])
-          json_response({
-            text: "_",
-            response_type: "ephemeral",
-            replace_original: true,
-          }, :created)
-
+          response = { text: "_" }
         else
           # start a convo with all guests
           guests = plan.invitations.map(&:user)
           guests.each { |guest| SlackSubmissionsHelper.invitation(plan, guest, payload['trigger_id']) }
           plan.update(expiration: timezone.now + Plan::HOURS*06*60) # start the timer on when this Plan expires
-
           guest_names_string = format_user_names(guests.map(&:slack_id))
-          json_response({
-            text: "OK. A personalized invitation has been sent to #{guest_names_string}. I'll let you know the results within two hours!"
-          }, :created)
+          response = { text: "OK. A personalized invitation has been sent to #{guest_names_string}. I'll let you know the results within two hours! :clock10:" }
         end
+        json_response(EPHEMERAL_RESPONSE.merge(response), :created)
 
       when /^invitation_availability/ # callback_id looks like "invitation_availability:<plan_id>:<user_id>"
         plan_id = payload['callback_id'].split(':')[1]
@@ -133,16 +126,16 @@ class SlackSubmissionsController < ApplicationController
           invitation.update(available: true)
           if plan.status == Plan::SUCCEEDED
             # if the plan is already decided on, just ask about the one winning option
-            SlackSubmissionsHelper.show_single_option(plan.winning_option_plan, user, plan.attendees + [plan.owner])
+            response = SlackSubmissionsHelper.show_single_option(plan.winning_option_plan, user, plan.attendees + [plan.owner])
           else
-            next_guest_step(plan_id, user_id)
+            response = next_guest_step(plan_id, user_id)
           end
         else
           invitation.update(available: false)
           plan.evaluate
-          SlackSubmissionsHelper.show_goodbye(plan, user)
+          response = SlackSubmissionsHelper.show_goodbye(plan, user)
         end
-        json_response('', :created)
+        json_response(EPHEMERAL_RESPONSE.merge(response), :created)
 
       # This is a response from when we showed a guest an option
       when /^show_option/ # show_option:#{option_plan.id}:#{user.id}
@@ -163,7 +156,7 @@ class SlackSubmissionsController < ApplicationController
 
   private
 
-  # A guest has resopnded to one of the options. Depending on the state of the plan, this might be
+  # A guest has responded to one of the options. Depending on the state of the plan, this might be
   # the only option they were offered.
   def handle_option_response(payload, single_option = false)
     option_plan_id = payload['callback_id'].split(':')[1]
@@ -177,14 +170,15 @@ class SlackSubmissionsController < ApplicationController
       single_option: single_option
     )
     option_plan = OptionPlan.find(option_plan_id)
-    next_guest_step(option_plan.plan_id, user_id)
-    json_response('', :created)
+    response = next_guest_step(option_plan.plan_id, user_id)
+    json_response(EPHEMERAL_RESPONSE.merge(response), :created)
   end
 
   # Take the next step for this plan for this guest.
   # Maybe show them another option.
   # Maybe tell them the plan failed already
   # Maybe tell them it'd been decided, and there's only one option now.
+  # returns a hash to be sent as an EPHEMERAL_RESPONSE
   def next_guest_step(plan_id, user_id)
     plan = Plan.find(plan_id)
     user = User.find(user_id)
@@ -199,6 +193,10 @@ class SlackSubmissionsController < ApplicationController
         if single_option_answer.value
           already_attending = plan.attendees.reject { |a| a.id == user.id } + [plan.owner]
           already_attending.each { |a| SlackSubmissionsHelper.send_new_attendee_notification(plan, a, user) }
+          {
+            text: "OK, you're in!",
+            attachments: SlackSubmissionsHelper.format_option_attachments(plan.winning_option_plan)
+          }
         else
           # if they answered 'no', then say "see ya!"
           SlackSubmissionsHelper.show_goodbye(plan, user)
@@ -206,18 +204,20 @@ class SlackSubmissionsController < ApplicationController
       end
     when Plan::FAILED, Plan::REJECTED, Plan::EXPIRED
       SlackSubmissionsHelper.send_failure_result(plan, user)
+      { text: '_'}
     when Plan::OPEN, Plan::AGREED
-      shown = maybe_show_next_option(plan, user)
-      if !shown && !plan.evaluate
-        json_response({text: "OK. Within two hours we'll let you know if you have plans, and what you're doing."}, :created)
+      response = maybe_show_next_option(plan, user)
+      if !response && !plan.evaluate
+        { text: "OK. Within two hours we'll let you know if you have plans, and what you're doing. Hang tight! :clock10:" }
+      else
+        response
       end
     end
   end
 
   def maybe_show_next_option(plan, user)
     opts = OptionPlan.available_option_plans(plan.id, user.id)
-    SlackSubmissionsHelper.show_option(opts.sample, user) if opts.present?
-    opts.present? # return true if we showed them another option
+    opts.present? ? SlackSubmissionsHelper.show_option(opts.sample, user) : nil
   end
 
   # Check if the plan is still open. Call this on every response, so if someone is trying to

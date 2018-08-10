@@ -5,6 +5,7 @@
 <table>
   <thead>
     <tr>
+      <th>Created</th>
       <th>Owner</th>
       <th>Rough time</th>
       <th>Title</th>
@@ -15,8 +16,10 @@
   </thead>
 
   <tbody>
+    <% @plans = @plans.sort { |a,b| b.created_at <=> a.created_at } %>
     <% @plans.each do |plan| %>
       <tr>
+        <td><%= plan.created_at %></td>
         <td><%= plan.owner.slack_id %></td>
         <td><%= plan.rough_time %></td>
         <td><%= plan.title || 'no title' %></td>
