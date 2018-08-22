@@ -206,18 +206,15 @@ class SlackSubmissionsController < ApplicationController
       SlackSubmissionsHelper.send_failure_result(plan, user)
       { text: '_'}
     when Plan::OPEN, Plan::AGREED
-      response = maybe_show_next_option(plan, user)
-      if !response && !plan.evaluate
+      opts = OptionPlan.available_option_plans(plan.id, user.id)
+      if opts.present?
+        SlackSubmissionsHelper.show_option(opts.sample, user)
+      elsif !plan.evaluate
         { text: "OK. Within two hours we'll let you know if you have plans, and what you're doing. Hang tight! :clock10:" }
       else
-        response
+        { text: '_'}
       end
     end
-  end
-
-  def maybe_show_next_option(plan, user)
-    opts = OptionPlan.available_option_plans(plan.id, user.id)
-    opts.present? ? SlackSubmissionsHelper.show_option(opts.sample, user) : nil
   end
 
   # Check if the plan is still open. Call this on every response, so if someone is trying to
