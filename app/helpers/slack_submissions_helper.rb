@@ -161,7 +161,7 @@ know the result within two hours."
     response = client.conversations_open(return_im: true, users: user.slack_id)
     channel_id = response[:channel][:id]
     callback_id = "invitation_availability:#{plan.id}:#{user.id}"
-    response = client.chat_postEphemeral(
+    response = client.chat_postMessage(
       channel: channel_id,
       user: user.slack_id,
       text: invitation_message,
