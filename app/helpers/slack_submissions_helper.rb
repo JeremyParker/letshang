@@ -209,6 +209,14 @@ know the result within two hours."
 
   # When a plan is already decided on, a late-responder or no-voter might want to join.
   def self.show_single_option(option_plan, user, guests)
+    client = SlackHelper.set_up_client(user)
+    response = client.conversations_open(return_im: true, users: user.slack_id)
+    channel_id = response[:channel][:id]
+    message = self.single_option(option_plan, user, guests)
+    client.chat_postMessage(message.merge(channel: channel_id, user: user.slack_id))
+  end
+
+  def self.single_option(option_plan, user, guests)
     callback_id = "show_single_option:#{option_plan.id}:#{user.id}"
     {
       text: "A decision has been made! :smile: You haven't said you wanted to do it, but it's not \

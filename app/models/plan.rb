@@ -65,7 +65,7 @@ class Plan < ApplicationRecord
       end
       update(succeeded: true)
 
-      # inform guests who are available, but either said no to the winning option, or haven't responded to it yet.
+      # inform guests who are available, but either haven't responded to the winning option yet, or said no to it.
       potential_extras = invitations.where(available: true).map(&:user).reject { |u| all_attendees.include?(u) }
       potential_extras.each { |u| SlackSubmissionsHelper.show_single_option(winning_option_plan, u, all_attendees) }
       true

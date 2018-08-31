@@ -126,7 +126,7 @@ class SlackSubmissionsController < ApplicationController
           invitation.update(available: true)
           if plan.status == Plan::SUCCEEDED
             # if the plan is already decided on, just ask about the one winning option
-            response = SlackSubmissionsHelper.show_single_option(plan.winning_option_plan, user, plan.attendees + [plan.owner])
+            response = SlackSubmissionsHelper.single_option(plan.winning_option_plan, user, plan.attendees + [plan.owner])
           else
             response = next_guest_step(plan_id, user_id)
           end
