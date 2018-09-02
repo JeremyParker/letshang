@@ -37,15 +37,15 @@ All your guests' responses are confidential, and nobody knows who else is invite
   end
 
   # ask the owner what size group they'd be happy with
-  def self.plan_size_message(plan, guests, channel_id, direct_message)
+  def self.plan_size_message(plan, guests, channel_id)
     client = SlackHelper.set_up_client(plan.owner)
     menu_items = (1..plan.invitations.count).map { |n| { "text": n.to_s, "value": n } }
 
-    # pain in the ass: if it's a DM we have to create a conversation
+    # start a DM convo with the "host"
     response = client.conversations_open(return_im: true, users: plan.owner.slack_id)
     channel_id = response[:channel][:id]
 
-    client.chat_postEphemeral(
+    client.chat_postMessage(
       channel: channel_id,
       user: plan.owner.slack_id,
       as_user: false,

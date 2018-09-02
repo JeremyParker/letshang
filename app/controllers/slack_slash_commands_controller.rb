@@ -39,8 +39,7 @@ class SlackSlashCommandsController < ApplicationController
       initiating_user = User.maybe_create(params[:user_id], params[:user_name], team)
       users_info = SlackHelper.user_info(initiating_user)
       plan = Plan.start_plan(initiating_user, guests, users_info[:tz])
-      direct_message = (params[:channel_name] == "directmessage")
-      SlackSlashCommandsHelper.plan_size_message(plan, guests, params[:channel_id], direct_message)
+      SlackSlashCommandsHelper.plan_size_message(plan, guests, params[:channel_id])
 
     when /help$/i # the string 'help' (case insensitive)
       json_response(SlackSlashCommandsHelper.help(), :created)

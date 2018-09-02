@@ -143,7 +143,7 @@ module SlackSubmissionsHelper
       msg + ":black_small_square: #{opt.title}\n"
     end
     client = SlackHelper.set_up_client(plan.owner)
-    client.chat_postEphemeral(
+    client.chat_postMessage(
       channel: channel_id,
       user: plan.owner.slack_id,
       text: "Great idea! That option is saved.\n" + plan_list,

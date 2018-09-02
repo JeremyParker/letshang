@@ -7,8 +7,7 @@ require 'humanize'
 class SlackSubmissionsController < ApplicationController
   protect_from_forgery :except => [:create] # we check the token 'manually' with `valid_slack_token`
 
-  EPHEMERAL_RESPONSE = {
-    response_type: "ephemeral",
+  REPLACE_RESPONSE = {
     replace_original: true
   }
 
@@ -72,7 +71,7 @@ class SlackSubmissionsController < ApplicationController
         input = payload['actions'][0]['selected_options'][0]['value'].to_i
         plan.update(minimum_attendee_count: input) # TODO - move this to plan.rb
         response = SlackSubmissionsHelper.rough_time_message(plan, payload['channel']['id'])
-        json_response(EPHEMERAL_RESPONSE.merge(response), :ok)
+        json_response(REPLACE_RESPONSE.merge(response), :ok)
 
       when /^plan_time/
         plan = Plan.find(payload['callback_id'].split(':').last)
@@ -85,7 +84,7 @@ class SlackSubmissionsController < ApplicationController
         when 'tomorrow'
           timezone.tomorrow
         else
-          return json_response(EPHEMERAL_RESPONSE.merge({
+          return json_response(REPLACE_RESPONSE.merge({
             text: "What? You plan too far in advance. Try being more spontaneous! Come back closer to when you want to go out."
           }), :created)
         end
@@ -94,7 +93,7 @@ class SlackSubmissionsController < ApplicationController
         # ask the user to suggest an activity option
         SlackSubmissionsHelper.new_option_dialog(plan, payload['trigger_id'])
 
-        json_response(EPHEMERAL_RESPONSE.merge({
+        json_response(REPLACE_RESPONSE.merge({
           text: "_" # annoyingly we can't delete the previous message
         }), :created)
 
@@ -116,7 +115,7 @@ class SlackSubmissionsController < ApplicationController
           guest_names_string = format_user_names(guests.map(&:slack_id))
           response = { text: "OK. A personalized invitation has been sent to #{guest_names_string}. I'll let you know the results within #{Plan::HOURS.humanize} hours! :clock10:" }
         end
-        json_response(EPHEMERAL_RESPONSE.merge(response), :created)
+        json_response(REPLACE_RESPONSE.merge(response), :created)
 
       when /^invitation_availability/ # callback_id looks like "invitation_availability:<plan_id>:<user_id>"
         plan_id = payload['callback_id'].split(':')[1]
@@ -137,7 +136,7 @@ class SlackSubmissionsController < ApplicationController
           plan.evaluate
           response = SlackSubmissionsHelper.show_goodbye(plan, user)
         end
-        json_response(EPHEMERAL_RESPONSE.merge(response), :created)
+        json_response(REPLACE_RESPONSE.merge(response), :created)
 
       # This is a response from when we showed a guest an option
       when /^show_option/ # show_option:#{option_plan.id}:#{user.id}
@@ -173,14 +172,14 @@ class SlackSubmissionsController < ApplicationController
     )
     option_plan = OptionPlan.find(option_plan_id)
     response = next_guest_step(option_plan.plan_id, user_id)
-    json_response(EPHEMERAL_RESPONSE.merge(response), :created)
+    json_response(REPLACE_RESPONSE.merge(response), :created)
   end
 
   # Take the next step for this plan for this guest.
   # Maybe show them another option.
   # Maybe tell them the plan failed already
   # Maybe tell them it'd been decided, and there's only one option now.
-  # returns a hash to be sent as an EPHEMERAL_RESPONSE
+  # returns a hash to be sent as a message
   def next_guest_step(plan_id, user_id)
     plan = Plan.find(plan_id)
     user = User.find(user_id)
@@ -212,6 +211,7 @@ class SlackSubmissionsController < ApplicationController
       if opts.present?
         SlackSubmissionsHelper.show_option(opts.sample, user)
       elsif !plan.evaluate
+        # TODO: tell them when the plan actually expires, in local time.
         { text: "OK. Within #{Plan::HOURS.humanize} hours we'll let you know if you have plans, and what you're doing. Hang tight! :clock10:" }
       else
         { text: '_'}
