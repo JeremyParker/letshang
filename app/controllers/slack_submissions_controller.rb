@@ -2,6 +2,8 @@ include Response
 include SlackToken
 include ParseUsers
 
+require 'humanize'
+
 class SlackSubmissionsController < ApplicationController
   protect_from_forgery :except => [:create] # we check the token 'manually' with `valid_slack_token`
 
@@ -112,7 +114,7 @@ class SlackSubmissionsController < ApplicationController
           guests.each { |guest| SlackSubmissionsHelper.invitation(plan, guest, payload['trigger_id']) }
           plan.update(expiration: timezone.now + Plan::HOURS*06*60) # start the timer on when this Plan expires
           guest_names_string = format_user_names(guests.map(&:slack_id))
-          response = { text: "OK. A personalized invitation has been sent to #{guest_names_string}. I'll let you know the results within two hours! :clock10:" }
+          response = { text: "OK. A personalized invitation has been sent to #{guest_names_string}. I'll let you know the results within #{Plan::HOURS.humanize} hours! :clock10:" }
         end
         json_response(EPHEMERAL_RESPONSE.merge(response), :created)
 
@@ -210,7 +212,7 @@ class SlackSubmissionsController < ApplicationController
       if opts.present?
         SlackSubmissionsHelper.show_option(opts.sample, user)
       elsif !plan.evaluate
-        { text: "OK. Within two hours we'll let you know if you have plans, and what you're doing. Hang tight! :clock10:" }
+        { text: "OK. Within #{Plan::HOURS.humanize} hours we'll let you know if you have plans, and what you're doing. Hang tight! :clock10:" }
       else
         { text: '_'}
       end
