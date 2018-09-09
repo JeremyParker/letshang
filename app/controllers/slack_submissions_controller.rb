@@ -111,7 +111,7 @@ class SlackSubmissionsController < ApplicationController
           # start a convo with all guests
           guests = plan.invitations.map(&:user)
           guests.each { |guest| SlackSubmissionsHelper.invitation(plan, guest, payload['trigger_id']) }
-          plan.update(expiration: timezone.now + Plan::HOURS*06*60) # start the timer on when this Plan expires
+          plan.start_timer
           guest_names_string = format_user_names(guests.map(&:slack_id))
           response = { text: "OK. A personalized invitation has been sent to #{guest_names_string}. I'll let you know the results within #{Plan::HOURS.humanize} hours! :clock10:" }
         end
@@ -178,13 +178,12 @@ class SlackSubmissionsController < ApplicationController
   # Take the next step for this plan for this guest.
   # Maybe show them another option.
   # Maybe tell them the plan failed already
-  # Maybe tell them it'd been decided, and there's only one option now.
+  # Maybe tell them it's been decided, and there's only one option now.
   # returns a hash to be sent as a message
   def next_guest_step(plan_id, user_id)
     plan = Plan.find(plan_id)
     user = User.find(user_id)
 
-    puts "**** plan status is #{plan.status}"
     case plan.status
     when Plan::SUCCEEDED
       # check if this user has a single_option_answer (i.e. we asked after the plan SUCCEEDED)
@@ -203,7 +202,10 @@ class SlackSubmissionsController < ApplicationController
           SlackSubmissionsHelper.show_goodbye(plan, user)
         end
       end
-    when Plan::FAILED, Plan::REJECTED, Plan::EXPIRED
+    when Plan::REJECTED
+      plan.evaluate
+      { text: '_'}
+    when Plan::FAILED, Plan::EXPIRED
       SlackSubmissionsHelper.send_failure_result(plan, user)
       { text: '_'}
     when Plan::OPEN, Plan::AGREED

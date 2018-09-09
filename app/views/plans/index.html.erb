@@ -7,6 +7,7 @@
     <tr>
       <th>Created</th>
       <th>Owner</th>
+      <th>Status</th>
       <th>Rough time</th>
       <th>Title</th>
       <th>#Guests</th>
@@ -22,6 +23,7 @@
       <tr>
         <td><%= plan.created_at %></td>
         <td><%= plan.owner.slack_id %></td>
+        <td><%= plan.status_string %></td>
         <td><%= plan.rough_time %></td>
         <td><%= plan.title || 'no title' %></td>
         <td><%= plan.invitations.count %></td>

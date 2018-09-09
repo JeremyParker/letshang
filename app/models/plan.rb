@@ -34,6 +34,7 @@ class Plan < ApplicationRecord
   EXPIRED = 3   # Expiration has passed, but haven't notified yet
   REJECTED = 4  # Too many people said no/unavailable, but haven't notified yet
   OPEN = 5      # Still working on it
+  UNSENT = 6    # Never sent out to guests
   def status
     if succeeded
       SUCCEEDED
@@ -45,10 +46,17 @@ class Plan < ApplicationRecord
       REJECTED
     elsif expired?
       EXPIRED
-    else
+    elsif expiration
       OPEN
+    else
+      UNSENT
     end
   end
+
+  def status_string
+    %w(succeeded failed agreed expired rejected open unsent)[status]
+  end
+
 
   # check the state of the plan and take appropriate action
   # This can be called from a cron job
@@ -93,8 +101,12 @@ class Plan < ApplicationRecord
     option_plans.select { |op| answers[op] && answers[op].select(&:value).count >= minimum_attendee_count }
   end
 
+  def start_timer
+    update(expiration: Time.now + HOURS*60*60) # start the timer on when this Plan expires
+  end
+
   def expired?
-    ActiveSupport::TimeZone.new(timezone).now > expiration if expiration
+    Time.now > expiration if expiration
   end
 
   # is there any way this plan could succeed? I.e. have too many people said 'no'.
