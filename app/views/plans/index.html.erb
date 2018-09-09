@@ -10,6 +10,7 @@
       <th>Rough time</th>
       <th>Title</th>
       <th>#Guests</th>
+      <th>Min Attendees</th>
       <th>#Options</th>
       <th colspan="3"></th>
     </tr>
@@ -24,6 +25,7 @@
         <td><%= plan.rough_time %></td>
         <td><%= plan.title || 'no title' %></td>
         <td><%= plan.invitations.count %></td>
+        <td><%= plan.minimum_attendee_count %></td>
         <td><%= plan.options.count %></td>
         <td><%= link_to 'Show', plan %></td>
         <td><%= link_to 'Edit', edit_plan_path(plan) %></td>
