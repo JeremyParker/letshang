@@ -112,9 +112,10 @@ class Plan < ApplicationRecord
   # is there any way this plan could succeed? I.e. have too many people said 'no'.
   def can_succeed?
     unavailable_count = invitations.where(:available => false).count
-    option_plans.any? do |option_plan|
+    still_viable = option_plans.select do |option_plan|
       invitations.count - (unavailable_count + option_plan.not_interested_count) >= minimum_attendee_count
     end
+    still_viable.count > 0 # There was a weird bug with `any?` where it sometimes didn't return anything.
   end
 
   # who has responded 'yes' to the winning option_plan (NOTE: doesn't include Owner)
